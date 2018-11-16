@@ -20,3 +20,6 @@ core
 **/.mypy_cache
 eventdata
 *.egg-info/
+
+# Build and docs file
+docs/_build/
