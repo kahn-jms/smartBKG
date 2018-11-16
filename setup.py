@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='smartBKG',
       version='0.1',
@@ -10,5 +10,6 @@ setup(name='smartBKG',
       author='James Kahn',
       author_email='kahn.jms@gmail.com',
       license='MIT',
-      packages=['smartBKG'],
+      # packages=['smartBKG'],
+      packages=find_packages(),
       zip_safe=False)
