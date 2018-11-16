@@ -9,7 +9,7 @@ import numpy as np
 import keras
 import pandas as pd
 from keras.preprocessing import text
-import evtPdl  # type:ignore
+from smartBKG import evtPdl  # type:ignore
 
 
 class MCParticlesPreprocPandas():
