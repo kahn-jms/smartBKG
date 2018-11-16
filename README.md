@@ -81,4 +81,26 @@ python3 examples/preprocessing/create_memmaps.py -i /path/to/preprocessed/files/
 
 ## Training
 
-Here we want to train the actual network
+Now that we have all the training input data prepared we can actually train the actual network.
+It's _highly_ recommended you perform the training on a GPU, if not it's recommended to visit [here](https://www.nvidia.com/de-de/shop/geforce/?nvid=nv-int-geo-de-shop-all) first.
+
+There is a range of models available to use in `examples/train/models`, with top-level model being for both decay string and MCparticles input.
+The models in subdirectories deal with the individual inputs only as indicated by their names.
+From my own tests I found that the ResNet models seem to be the most robust so these are a good start.
+You are of course free to create your own models, the only requirement is that they inherit the `NNBaseClass` and you acknowledge me in your Nobel acceptance speech.
+
+As an example, training the combined input ResNet model can be done with:
+```bash
+python3 train_network.py \
+--decay_input /path/to/decay_input.memmap \
+--particle_input path/to/particle_input.memmap \
+--pdg_input path/to/pdg_input.memmap \
+--mother_pdg_input /path/to/mother_pdg_input.memmap \
+--y_output /path/to/y_output.memmap \
+-m models/CNN_ResNet.py \
+-o training/output/ \
+-l logs/
+```
+
+It's recommended to not save the logs to your home directory but somewhere with large disposable storage as these
+can become quite large if many trainings are performed.
