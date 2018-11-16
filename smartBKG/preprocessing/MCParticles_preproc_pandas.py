@@ -4,7 +4,6 @@
 # Load and prepare data for input to NN all in single numpy array
 # James Kahn
 
-import argparse
 import os
 import numpy as np
 import keras

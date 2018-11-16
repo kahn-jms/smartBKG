@@ -4,6 +4,8 @@ centraldb/
 *.xml
 *.swp
 *.root
+*.pdf
+*.csv
 *~
 *.log
 __pycache__/
@@ -17,3 +19,4 @@ core
 *.h5
 **/.mypy_cache
 eventdata
+*.egg-info/

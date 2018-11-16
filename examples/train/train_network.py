@@ -9,12 +9,12 @@ import os
 import sys
 import time
 from keras import callbacks
-import tensorflow as tf
+# import tensorflow as tf
 import importlib
 
-from tensorboard_wrapper import TensorBoardWrapper
-from load_memmap_data import LoadMemmapData  # type:ignore
-import evtPdl  # type:ignore
+# from tensorboard_wrapper import TensorBoardWrapper
+from smartBKG.train import LoadMemmapData  # type:ignore
+import smartBKG.evtPdl as evtPdl  # type:ignore
 
 
 def getCmdArgs():
@@ -91,6 +91,7 @@ if __name__ == '__main__':
         'decay_input': args.decay_input,
         'y_output': args.y_output,
     }
+    # ADD as default in LoadMemmapData arg, user's don't need to know this
     padding_dict = {
         'particle_input': 100,
         'pdg_input': 100,
@@ -98,6 +99,7 @@ if __name__ == '__main__':
         'decay_input': 150,
     }
 
+    # ADD to NN base class, I guess when initialised, and timestamp the model later
     now = time.strftime("%Y.%m.%d.%H.%M")
 
     if args.cpu:
@@ -131,9 +133,11 @@ if __name__ == '__main__':
         NN_model.build_model()
 
     # Append training time to model name (useful when re-training a model)
+    # ADD to base class
     NN_model.model.name = '{}_{}'.format(NN_model.model.name, now)
 
     # Create the output dirs, better to do here incase loading train data fails
+    # ADD to NN base class
     out_dir = os.path.join(args.out_dir, now)
     log_dir = os.path.join(args.log_dir, now)
     os.makedirs(out_dir, exist_ok=True)
@@ -144,6 +148,7 @@ if __name__ == '__main__':
     NN_model.plot_model(out_dir)
 
     # Setup callbacks
+    # ADD callbacks to base NN class
     modelCheckpoint = callbacks.ModelCheckpoint(
         os.path.join(
             out_dir,
@@ -182,6 +187,7 @@ if __name__ == '__main__':
     )
 
     # Need to specify in fit_generator how many times to call batch generator
+    # ADD to data_loader
     train_steps = int(
         data_loader.memmap_dict['y_output'].shape[0] * data_loader.train_frac / (sub_epochs * batch_size)
     )
@@ -211,6 +217,7 @@ if __name__ == '__main__':
         epochs=int(epochs * sub_epochs),
         validation_data=data_loader.batch_generator(batch_size),
         validation_steps=validation_steps,
+        # ADD this will become callbacks=model.callbacks
         callbacks=[
             modelCheckpoint,
             csvLogger,

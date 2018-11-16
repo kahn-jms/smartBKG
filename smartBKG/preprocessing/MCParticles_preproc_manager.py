@@ -9,7 +9,7 @@ import numpy as np
 import os
 import argparse
 from keras.preprocessing import sequence
-from MCParticles_preproc_pandas import MCParticlesPreprocPandas
+from .MCParticles_preproc_pandas import MCParticlesPreprocPandas
 
 
 class MCParticlesPreprocManager():
