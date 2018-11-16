@@ -22,10 +22,7 @@ The Belle II AnalysiS Software (basf2) framework should be setup before installi
 the dependencies yourself.
 
 1. Clone this repository
-2. Install package (better to do it locally):
-		```bash
-			 python3 setup.py install --user
-				```
+2. Install package (better to do it locally): `python3 setup.py install --user`
 
 ## Training data production
 
@@ -38,7 +35,8 @@ To do this we save as a numpy array the event numbers.
 This relies on each event within an MC batch having unique event numbers (in official MC this is the case).
 The arrays can then be merged for a single MC channel and used for event selection on the parent MDST files.
 
-At the moment can't seem to access parent event number during processing (overwritten on import?), but when I can:
+Everything's a lie, just need to use keepParents flag.
+~~~At the moment can't seem to access parent event number during processing (overwritten on import?), but when I can:~~~
 ~~To do this we save a Pandas series with the index being the LFN of the original MDST file (parentLFN in the skim file) and the value is a list of event numbers.~~
 
 ## Preprocessing
