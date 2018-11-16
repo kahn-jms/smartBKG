@@ -11,7 +11,7 @@ import basf2 as b2
 
 # make the Belle2 namespace available
 from ROOT import Belle2
-from MCParticles_preproc_manager import MCParticlesPreprocManager
+from smartBKG.preprocessing import MCParticlesPreprocManager
 
 # config = tf.ConfigProto(intra_op_parallelism_threads=1,
 #                         inter_op_parallelism_threads=1,
