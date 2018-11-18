@@ -43,6 +43,7 @@ Everything's a lie, just need to use keepParents flag.
 
 The preprocessing of training data translates the inputs into a format that can be handled by a neural network.
 This is done in two steps:
+
 1. Run standard preprocessing procedures (e.g. one-hot encoding, normalisation)
 2. Create a memory map of the data to allow fast processing of inputs larger than the machine's memory
 

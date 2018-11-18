@@ -23,5 +23,6 @@ eventdata
 
 # Build and docs file
 docs/_build/
+docs/_build
 build/
 dist/
