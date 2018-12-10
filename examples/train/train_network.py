@@ -16,6 +16,9 @@ import importlib
 from smartBKG.train import LoadMemmapData  # type:ignore
 import smartBKG.evtPdl as evtPdl  # type:ignore
 
+# import tensorflow as tf
+# from keras.backend.tensorflow_backend import set_session
+
 
 def getCmdArgs():
     parser = argparse.ArgumentParser(
@@ -103,7 +106,16 @@ if __name__ == '__main__':
     now = time.strftime("%Y.%m.%d.%H.%M")
 
     if args.cpu:
+        print('Running on CPU only')
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    else:
+        print('Running on GPU')
+        # Set GPU memory usage to only what's needed
+        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+        # config = tf.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        # config.gpu_options.visible_device_list = "0"
+        # set_session(tf.Session(config=config))
 
     print('Loading input data')
     data_loader = LoadMemmapData(

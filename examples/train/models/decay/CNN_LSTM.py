@@ -9,8 +9,7 @@ from smartBKG.train import NNBaseClass  # type:ignore
 from keras.models import Model
 from keras.layers import Dense, Dropout, Input
 from keras.layers import LeakyReLU
-from keras.layers import Conv1D, GlobalAveragePooling1D, AveragePooling1D
-from keras.layers import GlobalMaxPooling1D, MaxPooling1D
+from keras.layers import Conv1D, GlobalAveragePooling1D, MaxPooling1D, AveragePooling1D
 from keras.layers import Embedding, LSTM
 from keras.layers import BatchNormalization
 from keras.layers import concatenate, Flatten
@@ -47,28 +46,20 @@ class NN_model(NNBaseClass):
         decay_input = Input(shape=self.shape_dict['decay_input'][1:], name='decay_input')
         decay_embed = decstr_embedding(decay_input)
 
-        # Build wide CNN for decay string processing
-        wide_layers = []
-        for i in range(4, 10):
-            # With regularisation
-            layer_w = self._conv1D_node(
-                decay_embed,
-                filters=64,
-                kernel_size=i,
-            )
-            # Without regularisation
-            # layer_w = Conv1D(
-            #     filters=64,
-            #     kernel_size=i,
-            #     padding='same',
-            # )(decay_embed)
-            # layer_w = LeakyReLU()(layer_w)
-            # layer_w = GlobalAveragePooling1D()(layer_w)
-            layer_w = GlobalMaxPooling1D()(layer_w)
-            wide_layers.append(layer_w)
+        decay_l = self._conv1D_node(
+            decay_embed,
+            filters=64,
+            kernel_size=3,
+        )
+        # decay_l = AveragePooling1D(pool_size=2)(decay_l)
+        decay_l = MaxPooling1D(pool_size=2)(decay_l)
+        decay_l = LSTM(
+            units=64,
+            activation='tanh',
+        )(decay_l)
 
         # Put it all together, outputs 4xfilter_size = 128
-        decay_l = concatenate(wide_layers, axis=-1)
+        # decay_l = concatenate(decay_l, axis=-1)
 
         # decay_l = Dropout(0.4)(decay_l)
         decay_l = Dense(256)(decay_l)

@@ -5,14 +5,14 @@
 # James Kahn
 
 from smartBKG.train import NNBaseClass  # type:ignore
-# from smartBKG.train.NN_base_class import NNBaseClass
 
 from keras.models import Model
 from keras.layers import Dense, Dropout, Input
 from keras.layers import LeakyReLU
+from keras.layers import Conv1D, GlobalAveragePooling1D, MaxPooling1D, AveragePooling1D
 from keras.layers import Embedding
 from keras.layers import BatchNormalization
-from keras.layers import concatenate, Flatten
+from keras.layers import concatenate, Add
 from keras import optimizers
 
 
@@ -26,8 +26,7 @@ class NN_model(NNBaseClass):
         self.shape_dict = shape_dict
         self.num_pdg_codes = num_pdg_codes
 
-        # adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
-        adam = optimizers.Adam(lr=0.001)  # best so far
+        adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
         # nadam = optimizers.Nadam(lr=0.002)
         # adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
         # adadelta = optimizers.Adadelta(lr=1.0, epsilon=None, decay=0.0)
@@ -55,35 +54,41 @@ class NN_model(NNBaseClass):
         # Put all the particle
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
-        # kernel=3, flatten
-        comb_l = Flatten()(particle_l)
+        particle_l = self.conv1D_avg_node(
+            particle_l,
+            filters=64,
+            kernel_size=3,
+            pool='max',
+        )
+        particle_l = self.conv1D_avg_node(
+            particle_l,
+            filters=64,
+            kernel_size=3,
+            pool='max',
+        )
+        particle_l = self.conv1D_avg_node(
+            particle_l,
+            filters=64,
+            kernel_size=3,
+            pool='max',
+        )
+        # Flatten (not really)
+        particle_output = GlobalAveragePooling1D()(particle_l)
+
+        # particle_l = Dense(32, kernel_initializer='uniform')(particle_l)
+        # particle_l = BatchNormalization()(particle_l)
+        # particle_l = LeakyReLU()(particle_l)
+        # particle_output = Dropout(0.4)(particle_l)
 
         # Finally, combine the two networks
         # comb_l = concatenate([decay_output, particle_output], axis=-1)
-        comb_l = Dense(1024)(comb_l)
-        # comb_l = Dense(1024, kernel_initializer='uniform')(comb_l)
-        # comb_l = BatchNormalization()(comb_l)
+        comb_l = Dense(256)(particle_output)
+        comb_l = LeakyReLU()(comb_l)
+        comb_l = Dropout(0.5)(comb_l)
+        comb_l = Dense(128)(comb_l)
         comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.4)(comb_l)
-
-        comb_l = Dense(1024)(comb_l)
-        # comb_l = Dense(1024, kernel_initializer='uniform')(comb_l)
-        # comb_l = BatchNormalization()(comb_l)
-        comb_l = LeakyReLU()(comb_l)
-        # comb_l = Dropout(0.4)(comb_l)
-
-        comb_l = Dense(1024)(comb_l)
-        # comb_l = Dense(1024, kernel_initializer='uniform')(comb_l)
-        # comb_l = BatchNormalization()(comb_l)
-        comb_l = LeakyReLU()(comb_l)
-        # comb_l = Dropout(0.4)(comb_l)
-
-        comb_l = Dense(512)(comb_l)
-        # comb_l = Dense(512, kernel_initializer='uniform')(comb_l)
-        # comb_l = BatchNormalization()(comb_l)
-        comb_l = LeakyReLU()(comb_l)
-        # comb_l = Dropout(0.2)(comb_l)
-        # comb_l = Dense(32)(comb_l)
+        # comb_l = Dense(256)(comb_l)
         # comb_l = LeakyReLU()(comb_l)
         comb_output = Dense(1, activation='sigmoid', name='y_output')(comb_l)
 
@@ -91,7 +96,7 @@ class NN_model(NNBaseClass):
         model = Model(
             inputs=[particle_input, pdg_input, mother_pdg_input],
             outputs=comb_output,
-            name='feed_forward_particles'
+            name='particles-CNN-vanilla'
         )
         # Finally compile the model
         model.compile(
@@ -102,3 +107,5 @@ class NN_model(NNBaseClass):
         model.summary()
 
         self.model = model
+
+

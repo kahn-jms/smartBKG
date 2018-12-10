@@ -8,6 +8,7 @@ import os
 from keras.utils import plot_model
 from keras.models import load_model
 from keras.layers import Conv1D
+from keras.layers import MaxPooling1D, AveragePooling1D
 from keras.layers import BatchNormalization
 from keras.layers import Dropout
 from keras.layers import LeakyReLU
@@ -72,3 +73,27 @@ class NNBaseClass():
             layer = Dropout(dropout)(layer)
 
         return layer
+
+    def conv1D_avg_node(
+        self,
+        input_l,
+        filters=64,
+        kernel_size=3,
+        pool='max',
+    ):
+        ''' Collective convolutional node '''
+        particle_l = input_l
+        for i in range(2):
+            particle_l = self._conv1D_node(
+                particle_l,
+                filters=filters,
+                kernel_size=kernel_size,
+                # dropout=0.
+            )
+            # Compress
+            if pool == 'max':
+                particle_l = MaxPooling1D(pool_size=2)(particle_l)
+            elif pool == 'avg':
+                particle_l = AveragePooling1D(pool_size=2)(particle_l)
+
+        return particle_l
