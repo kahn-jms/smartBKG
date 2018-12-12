@@ -54,30 +54,35 @@ class NN_model(NNBaseClass):
         # Put all the particle
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
-        particle_l = self.conv1D_avg_node(
-            particle_l,
-            filters=64,
-            kernel_size=4,
-            pool='avg',
-        )
-        particle_l = self.conv1D_avg_node(
-            particle_l,
-            filters=64,
-            kernel_size=3,
-            pool='avg',
-        )
-        particle_l = self.conv1D_avg_node(
-            particle_l,
-            filters=64,
-            kernel_size=3,
-            # pool='avg',
-        )
-        particle_l = self.conv1D_avg_node(
-            particle_l,
-            filters=64,
-            kernel_size=3,
-            # pool='avg',
-        )
+        particle_l = self._conv1D_node(particle_l, filters=64, kernel_size=7)
+
+        # Block 1
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, pool='avg')
+
+        # Block 2
+        # particle_l = self.conv1D_avg_node(particle_l, filters=128, kernel_size=3)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128, pool='avg')
+
+        # Block 3
+        # particle_l = self.conv1D_avg_node(particle_l, filters=256, kernel_size=3)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=256)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=256)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=256)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=256)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=256)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=256, pool='avg')
+
+        # Block 4
+        # particle_l = self.conv1D_avg_node(particle_l, filters=512, kernel_size=3)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=512)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=512)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=512)
+
         # Flatten (not really)
         particle_output = GlobalAveragePooling1D()(particle_l)
 
@@ -88,11 +93,11 @@ class NN_model(NNBaseClass):
 
         # Finally, combine the two networks
         # comb_l = concatenate([decay_output, particle_output], axis=-1)
-        comb_l = Dense(512)(particle_output)
-        comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.3)(comb_l)
-        comb_l = Dense(128)(comb_l)
-        comb_l = LeakyReLU()(comb_l)
+        comb_l = Dense(512, activation='softmax')(particle_output)
+        # comb_l = LeakyReLU()(comb_l)
+        comb_l = Dropout(0.5)(comb_l)
+        comb_l = Dense(128, activation='softmax')(comb_l)
+        # comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.4)(comb_l)
         # comb_l = Dense(256)(comb_l)
         # comb_l = LeakyReLU()(comb_l)
@@ -102,7 +107,7 @@ class NN_model(NNBaseClass):
         model = Model(
             inputs=[particle_input, pdg_input, mother_pdg_input],
             outputs=comb_output,
-            name='particles-CNN-vanilla'
+            name='particles-ResNet50'
         )
         # Finally compile the model
         model.compile(
@@ -113,5 +118,3 @@ class NN_model(NNBaseClass):
         model.summary()
 
         self.model = model
-
-

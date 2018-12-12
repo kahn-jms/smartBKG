@@ -7,11 +7,11 @@
 from smartBKG.train import NNBaseClass  # type:ignore
 
 from keras.models import Model
-from keras.layers import Dense, Dropout, Input
+from keras.layers import Dense, Dropout, Input, Lambda
 from keras.layers import LeakyReLU
 from keras.layers import Conv1D, GlobalAveragePooling1D, MaxPooling1D, AveragePooling1D
 from keras.layers import Embedding
-from keras.layers import BatchNormalization
+# from keras.layers import BatchNormalization
 from keras.layers import concatenate, Add
 from keras import optimizers
 
@@ -21,10 +21,12 @@ class NN_model(NNBaseClass):
         self,
         shape_dict,
         num_pdg_codes,
+        cardinality=32,
     ):
         super().__init__()
         self.shape_dict = shape_dict
         self.num_pdg_codes = num_pdg_codes
+        self.cardinality = cardinality
 
         adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
         # nadam = optimizers.Nadam(lr=0.002)
@@ -54,30 +56,28 @@ class NN_model(NNBaseClass):
         # Put all the particle
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
-        particle_l = self.conv1D_avg_node(
-            particle_l,
-            filters=64,
-            kernel_size=4,
-            pool='avg',
+        # initial_filters = 64
+        particle_l = self._conv1D_node(particle_l, filters=64, kernel_size=7, strides=2)
+        # Should add maxpool here -- don't need, just reduces input size
+        # particle_l = MaxPooling1D(pool_size=3, strides=2)(particle_l)
+
+        # Block 1
+        # Output shape = cardinality x output shape
+        particle_r = self._grouped_convolution_block(
+            input_layer=particle_l,
+            cardinality=self.cardinality,
+            grouped_channels=int(64 / self.cardinality),
+            # Args for expanded block
+            kernels=[1, 3, 1],
+            filters=4,
+            dropout=0,
         )
-        particle_l = self.conv1D_avg_node(
-            particle_l,
-            filters=64,
-            kernel_size=3,
-            pool='avg',
-        )
-        particle_l = self.conv1D_avg_node(
-            particle_l,
-            filters=64,
-            kernel_size=3,
-            # pool='avg',
-        )
-        particle_l = self.conv1D_avg_node(
-            particle_l,
-            filters=64,
-            kernel_size=3,
-            # pool='avg',
-        )
+
+        # Here allow input from before ResNeXt block too
+        particle_l = Add()([particle_l, particle_r])
+        # This needs a nonlinear activation too for some reason?
+        particle_l = LeakyReLU()(particle_l)
+
         # Flatten (not really)
         particle_output = GlobalAveragePooling1D()(particle_l)
 
@@ -88,11 +88,11 @@ class NN_model(NNBaseClass):
 
         # Finally, combine the two networks
         # comb_l = concatenate([decay_output, particle_output], axis=-1)
-        comb_l = Dense(512)(particle_output)
-        comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.3)(comb_l)
-        comb_l = Dense(128)(comb_l)
-        comb_l = LeakyReLU()(comb_l)
+        comb_l = Dense(512, activation='softmax')(particle_output)
+        # comb_l = LeakyReLU()(comb_l)
+        comb_l = Dropout(0.5)(comb_l)
+        comb_l = Dense(128, activation='softmax')(comb_l)
+        # comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.4)(comb_l)
         # comb_l = Dense(256)(comb_l)
         # comb_l = LeakyReLU()(comb_l)
@@ -102,7 +102,7 @@ class NN_model(NNBaseClass):
         model = Model(
             inputs=[particle_input, pdg_input, mother_pdg_input],
             outputs=comb_output,
-            name='particles-CNN-vanilla'
+            name='particles-ResNeXt'
         )
         # Finally compile the model
         model.compile(
@@ -114,4 +114,43 @@ class NN_model(NNBaseClass):
 
         self.model = model
 
+    def _grouped_convolution_block(self, input_layer, cardinality, grouped_channels, **kwargs):
+        ''' Build expanded blocks with grouped input channels '''
 
+        resnext_l = []
+        for c in range(self.cardinality):
+            x = Lambda(
+                lambda z: z[:, :, c * grouped_channels:(c + 1) * grouped_channels]
+            )(input_layer)
+
+            resnext_l.append(
+                self._expanded_block(
+                    layer=x,
+                    output_shape=int(x.shape[-1]),
+                    **kwargs,
+                )
+            )
+
+        layer = concatenate(resnext_l, axis=-1)
+        return layer
+
+    def _expanded_block(self, layer, output_shape, kernels=[1, 3, 1], filters=4, dropout=0):
+        ''' Convenient function to add a single ResNeXt block
+
+        Produces conv1D layers with 1, 3, 1 sized kernels
+        '''
+        for kernel in kernels[:-1]:
+            layer = self._conv1D_node(
+                layer,
+                filters=filters,
+                kernel_size=kernel,
+                dropout=dropout,
+            )
+
+        # Last layer needs to have requested output shape
+        return self._conv1D_node(
+            layer,
+            filters=output_shape,
+            kernel_size=kernels[-1],
+            dropout=dropout,
+        )

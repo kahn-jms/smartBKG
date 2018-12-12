@@ -57,9 +57,9 @@ def getCmdArgs():
     parser.add_argument('-o', type=str, required=True,
                         help="Output directory for results", metavar="OUTPUT",
                         dest='out_dir')
-    parser.add_argument('-l', type=str, required=True,
-                        help="Log directory to save tensorboard output", metavar="LOGDIR",
-                        dest='log_dir')
+    # parser.add_argument('-l', type=str, required=True,
+    #                     help="Log directory to save tensorboard output", metavar="LOGDIR",
+    #                     dest='log_dir')
     parser.add_argument('--queue', type=int, required=False, default=1000,
                         help="Number of batches to preload into training queue (must be smaller than total number of train events)",
                         metavar="QUEUE", dest='queue')
@@ -151,11 +151,11 @@ if __name__ == '__main__':
     # Create the output dirs, better to do here incase loading train data fails
     # ADD to NN base class
     out_dir = os.path.join(args.out_dir, now)
-    log_dir = os.path.join(args.log_dir, now)
+    # log_dir = os.path.join(args.log_dir, now)
     os.makedirs(out_dir, exist_ok=True)
-    os.makedirs(log_dir, exist_ok=True)
+    # os.makedirs(log_dir, exist_ok=True)
     print('out_dir:', out_dir)
-    print('log_dir:', log_dir)
+    # print('log_dir:', log_dir)
 
     NN_model.plot_model(out_dir)
 

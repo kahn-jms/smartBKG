@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages
 
 setup(name='smartBKG',
-      version='0.1.1',
+      version='0.1.3',
       description='Create, train, and apply targeted MC simulations',
       # url='http://github.com/storborg/funniest',
       author='James Kahn',

@@ -12,6 +12,7 @@ from keras.layers import MaxPooling1D, AveragePooling1D
 from keras.layers import BatchNormalization
 from keras.layers import Dropout
 from keras.layers import LeakyReLU
+from keras.layers import Add
 
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
@@ -79,7 +80,7 @@ class NNBaseClass():
         input_l,
         filters=64,
         kernel_size=3,
-        pool='max',
+        pool=None,
     ):
         ''' Collective convolutional node '''
         particle_l = input_l
@@ -97,3 +98,41 @@ class NNBaseClass():
                 particle_l = AveragePooling1D(pool_size=2)(particle_l)
 
         return particle_l
+
+    def _resnet_node(
+        self,
+        input_layer,
+        n_layers=2,
+        kernels=3,
+        filters=32,
+        dropout=0,
+        pool=None,
+    ):
+        ''' Builds a standard resnet block including identity hop '''
+        input_filters = int(input_layer.shape[-1])
+
+        layer = input_layer
+        for i in range(n_layers - 1):
+            layer = self._conv1D_node(
+                layer,
+                filters=filters,
+                kernel_size=kernels,
+                dropout=dropout,
+            )
+
+        # Final layer in node needs to have same shape as input to do Add
+        layer = self._conv1D_node(
+            layer,
+            filters=input_filters,
+            kernel_size=kernels,
+            # dropout=dropout,
+        )
+
+        layer = Add()([layer, input_layer])
+        layer = LeakyReLU()(layer)
+        if pool == 'avg':
+            layer = AveragePooling1D(pool_size=2)(layer)
+        elif pool == 'max':
+            layer = MaxPooling1D(pool_size=2)(layer)
+
+        return layer
