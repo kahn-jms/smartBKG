@@ -28,7 +28,7 @@ the dependencies yourself.
 
 ### Event numbers
 
-Since the skims are contained in a separate MDST (and not as an index file) we 
+Since the skims are contained in a separate MDST (and not as an index file) we
 need to first record the event numbers of all the events that passed the skim.
 
 To do this we save as a numpy array the event numbers.
@@ -102,6 +102,20 @@ python3 train_network.py \
 -o training/output/ \
 -l logs/
 ```
-
 It's recommended to not save the logs to your home directory but somewhere with large disposable storage as these
 can become quite large if many trainings are performed.
+
+
+## Applying training
+
+```bash
+basf2  examples/smrt_expert.py \
+-d /path/to/decay/file \
+-b /path/to/background/files/directory \
+-n number of events to generate \
+-m /path/to/trained/model \
+--type type of input model (training)
+-t threshold to cut evtgen events on
+```
+For the trained model with the best training result use the hdf file with the highest epoch number.
+Output name of training: model_date_time_epoch-val_loss.h5
