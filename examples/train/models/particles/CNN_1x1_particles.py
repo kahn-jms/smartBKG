@@ -56,9 +56,15 @@ class NN_model(NNBaseClass):
 
         particle_l = self.conv1D_avg_node(
             particle_l,
-            filters=64,
-            kernel_size=3,
-            pool='avg',
+            filters=32,
+            kernel_size=1,
+            # pool='avg',
+        )
+        particle_l = self.conv1D_avg_node(
+            particle_l,
+            filters=32,
+            kernel_size=1,
+            # pool='avg',
         )
         particle_l = self.conv1D_avg_node(
             particle_l,

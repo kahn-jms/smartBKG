@@ -59,7 +59,7 @@ class NN_model(NNBaseClass):
         # Put it all together, outputs 4xfilter_size = 128
         decay_l = concatenate(wide_layers, axis=-1)
 
-        decay_l = Dropout(0.4)(decay_l)
+        # decay_l = Dropout(0.4)(decay_l)
         decay_l = Dense(128)(decay_l)
         decay_l = LeakyReLU()(decay_l)
         decay_l = Dropout(0.2)(decay_l)
@@ -87,10 +87,10 @@ class NN_model(NNBaseClass):
 
         # for i in range(4):
         #     particle_l = self._resnet_node(particle_l, filters=64, avg_pool=2)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0.3)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0.3)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0.3)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0.3)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
 
         # Flatten (not really)
         particle_output = GlobalAveragePooling1D()(particle_l)
@@ -116,7 +116,7 @@ class NN_model(NNBaseClass):
         model = Model(
             inputs=[decay_input, particle_input, pdg_input, mother_pdg_input],
             outputs=comb_output,
-            name='combined-wideCNN'
+            name='combined-ResNet-short'
         )
         # Finally compile the model
         model.compile(
@@ -127,39 +127,3 @@ class NN_model(NNBaseClass):
         model.summary()
 
         self.model = model
-
-    def _resnet_node(
-        self,
-        input_layer,
-        n_layers=2,
-        kernels=3,
-        filters=32,
-        dropout=0.4,
-        avg_pool=0,
-    ):
-        ''' Builds a standard resnet block including identity hop '''
-        input_filters = int(input_layer.shape[-1])
-
-        layer = input_layer
-        for i in range(n_layers - 1):
-            layer = self._conv1D_node(
-                layer,
-                filters=filters,
-                kernel_size=kernels,
-                dropout=dropout,
-            )
-
-        # Final layer in node needs to have same shape as input to do Add
-        layer = self._conv1D_node(
-            layer,
-            filters=input_filters,
-            kernel_size=kernels,
-            # dropout=dropout,
-        )
-
-        layer = Add()([layer, input_layer])
-        layer = LeakyReLU()(layer)
-        if avg_pool:
-            layer = AveragePooling1D(pool_size=avg_pool)(layer)
-
-        return layer

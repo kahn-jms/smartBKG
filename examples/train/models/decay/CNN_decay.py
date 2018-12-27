@@ -63,18 +63,18 @@ class NN_model(NNBaseClass):
             #     padding='same',
             # )(decay_embed)
             # layer_w = LeakyReLU()(layer_w)
-            # layer_w = GlobalAveragePooling1D()(layer_w)
-            layer_w = GlobalMaxPooling1D()(layer_w)
+            layer_w = GlobalAveragePooling1D()(layer_w)
+            # layer_w = GlobalMaxPooling1D()(layer_w)
             wide_layers.append(layer_w)
 
         # Put it all together, outputs 4xfilter_size = 128
         decay_l = concatenate(wide_layers, axis=-1)
 
         # decay_l = Dropout(0.4)(decay_l)
-        decay_l = Dense(256)(decay_l)
+        decay_l = Dense(128)(decay_l)
         decay_l = LeakyReLU()(decay_l)
-        decay_l = Dropout(0.5)(decay_l)
-        decay_l = Dense(64)(decay_l)
+        decay_l = Dropout(0.3)(decay_l)
+        decay_l = Dense(32)(decay_l)
         decay_l = LeakyReLU()(decay_l)
         comb_output = Dense(1, activation='sigmoid', name='y_output')(decay_l)
 

@@ -56,10 +56,10 @@ class NN_model(NNBaseClass):
 
         # for i in range(4):
         #     particle_l = self._resnet_node(particle_l, filters=64, avg_pool=2)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0.3)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0.3)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0.3, avg_pool=2)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0.3, avg_pool=2)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0, avg_pool=2)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0, avg_pool=2)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0)
 
         # Flatten (not really)
         particle_output = GlobalAveragePooling1D()(particle_l)
@@ -73,7 +73,7 @@ class NN_model(NNBaseClass):
         # comb_l = concatenate([decay_output, particle_output], axis=-1)
         comb_l = Dense(256)(particle_output)
         comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.5)(comb_l)
+        comb_l = Dropout(0.4)(comb_l)
         comb_l = Dense(128)(comb_l)
         comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.4)(comb_l)
@@ -103,7 +103,7 @@ class NN_model(NNBaseClass):
         n_layers=2,
         kernels=3,
         filters=32,
-        dropout=0.4,
+        dropout=0,
         avg_pool=0,
     ):
         ''' Builds a standard resnet block including identity hop '''

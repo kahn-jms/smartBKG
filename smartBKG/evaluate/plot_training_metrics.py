@@ -8,6 +8,7 @@ import argparse
 import pandas as pd
 from matplotlib import pyplot as plt
 import os
+import re
 
 
 class CompareTrainingMetrics():
@@ -38,30 +39,45 @@ class CompareTrainingMetrics():
         # Drop epoch column, don't need
         return df.drop('epoch', axis=1)
 
-    def plot_all_metrics(self, out_dir):
-        ''' Plot all available metrics in single plot and separately'''
+    def plot_all_metrics(self, out_dir, trunc=False):
+        ''' Plot all available metrics in single plot and separately
+
+        trunc indicates removal of time stamp from legend (useful if plotting single training)
+        '''
         # First plot all metrics together
         self.plot_metrics(
             self.metrics_df.columns,
-            os.path.join(out_dir, 'all_metrics.pdf')
+            os.path.join(out_dir, 'all_metrics.pdf'),
+            trunc=trunc
         )
 
         for col in self.metrics_df.columns:
             self.plot_metrics(
                 col,
-                os.path.join(out_dir, '{}.pdf'.format(col))
+                os.path.join(out_dir, '{}.pdf'.format(col)),
+                trunc=trunc
             )
 
-    def plot_metrics(self, metrics, out_file):
+    def plot_metrics(self, metrics, out_file, trunc=False):
         ''' Plot the given metric(s) to using matplotlib
 
         Arguments:
             metrics (str, list): The metrics in the dataframe to plot
             out_file (str): Path to file for saving plot
         '''
+        metrics_df = self.metrics_df
+        if trunc:
+            metrics_df.index = metrics_df.index.map(mapper=(lambda x: (re.sub(r'_20.*', '', x[0]), *(x[1:])) ))
+
         plt.figure()
         self.metrics_df.unstack(level=0)[metrics].plot()
-        plt.legend(loc='best', prop={'size': 6})
+
+        # If timestamps are included need to shrink legend to fit
+        if trunc:
+            plt.legend(loc='best')
+        else:
+            plt.legend(loc='best', prop={'size': 6})
+
         plt.grid(True, which='both', axis='y')
         plt.xlabel('Epoch')
         if isinstance(metrics, str) or len(metrics) == 1:
@@ -90,6 +106,9 @@ def GetCmdArgs():
     parser.add_argument('-o', type=str, required=True,
                         help="Output directory for plot files", metavar="OUTPUT",
                         dest='out_dir')
+    parser.add_argument('--trunc', action='store_true',
+                        help='Truncate model names to remove timestamp, useful if plotting single training metrics',
+                        dest='trunc')
     return parser.parse_args()
 
 
@@ -99,4 +118,4 @@ if __name__ == '__main__':
     os.makedirs(args.out_dir, exist_ok=True)
 
     ctm = CompareTrainingMetrics(args.in_files)
-    ctm.plot_all_metrics(args.out_dir)
+    ctm.plot_all_metrics(args.out_dir, trunc=args.trunc)
