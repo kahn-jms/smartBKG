@@ -59,13 +59,18 @@ class NN_model(NNBaseClass):
 
         # # Put it all together, outputs 4xfilter_size = 128
         # decay_l = concatenate(wide_layers, axis=-1)
+        decay_l = Flatten()(decay_embed)
 
-        # decay_l = Dropout(0.4)(decay_l)
-        # decay_l = Dense(512)(decay_l)
-        # decay_l = LeakyReLU()(decay_l)
-        # decay_l = Dropout(0.3)(decay_l)
-        # decay_output = Dense(256, activation='softmax')(decay_l)
-        decay_output = Flatten()(decay_embed)
+        decay_l = Dense(1024)(decay_l)
+        decay_l = LeakyReLU()(decay_l)
+        decay_l = Dropout(0.2)(decay_l)
+        decay_l = Dense(1024)(decay_l)
+        decay_l = LeakyReLU()(decay_l)
+        decay_l = Dropout(0.2)(decay_l)
+        decay_l = Dense(512)(decay_l)
+        decay_l = LeakyReLU()(decay_l)
+        decay_l = Dense(16)(decay_l)
+        decay_output = LeakyReLU()(decay_l)
 
         # Create joint embedding layer
         pdg_embedding = Embedding(
@@ -88,20 +93,29 @@ class NN_model(NNBaseClass):
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
         # kernel=3, flatten
-        particle_output = Flatten()(particle_l)
+        particle_l = Flatten()(particle_l)
+
+        particle_l = Dense(1024)(particle_l)
+        particle_l = LeakyReLU()(particle_l)
+        # particle_l = Dropout(0.2)(particle_l)
+        particle_l = Dense(1024)(particle_l)
+        particle_l = LeakyReLU()(particle_l)
+        particle_l = Dropout(0.2)(particle_l)
+        particle_l = Dense(1024)(particle_l)
+        particle_l = LeakyReLU()(particle_l)
+        particle_l = Dropout(0.2)(particle_l)
+        particle_l = Dense(512)(particle_l)
+        particle_output = LeakyReLU()(particle_l)
 
         # Finally, combine the two networks
         comb_l = concatenate([decay_output, particle_output], axis=-1)
-        comb_l = Dense(2056)(comb_l)
+        comb_l = Dense(256)(comb_l)
         comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.5)(comb_l)
-        comb_l = Dense(2056)(comb_l)
+        comb_l = Dropout(0.2)(comb_l)
+        comb_l = Dense(256)(comb_l)
         comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.5)(comb_l)
-        comb_l = Dense(2056)(comb_l)
-        comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.5)(comb_l)
-        comb_l = Dense(512)(comb_l)
+        comb_l = Dropout(0.2)(comb_l)
+        comb_l = Dense(256)(comb_l)
         comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.2)(comb_l)
         # comb_l = Dense(32)(comb_l)

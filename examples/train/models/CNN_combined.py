@@ -64,7 +64,8 @@ class NN_model(NNBaseClass):
         decay_l = Dense(256)(decay_l)
         decay_l = LeakyReLU()(decay_l)
         decay_l = Dropout(0.4)(decay_l)
-        decay_output = Dense(128, activation='softmax')(decay_l)
+        decay_l = Dense(128)(decay_l)
+        decay_output = LeakyReLU()(decay_l)
 
         # Create joint embedding layer
         pdg_embedding = Embedding(
@@ -92,7 +93,7 @@ class NN_model(NNBaseClass):
                 particle_l,
                 filters=512,
                 kernel_size=3,
-                dropout=0.3
+                # dropout=0.3
             )
         # Compress
         particle_l = AveragePooling1D(pool_size=2)(particle_l)
@@ -103,7 +104,7 @@ class NN_model(NNBaseClass):
                 particle_l,
                 filters=512,
                 kernel_size=3,
-                dropout=0.3
+                # dropout=0.3
             )
         # Compress
         particle_l = AveragePooling1D(pool_size=2)(particle_l)
@@ -114,7 +115,7 @@ class NN_model(NNBaseClass):
                 particle_l,
                 filters=512,
                 kernel_size=3,
-                dropout=0.3
+                # dropout=0.3
             )
         # Compress
         particle_l = AveragePooling1D(pool_size=2)(particle_l)
@@ -125,7 +126,7 @@ class NN_model(NNBaseClass):
                 particle_l,
                 filters=256,
                 kernel_size=3,
-                dropout=0.3
+                # dropout=0.3
             )
         # Compress
         # particle_l = AveragePooling1D(pool_size=2)(particle_l)
