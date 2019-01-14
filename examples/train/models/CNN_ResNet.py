@@ -63,7 +63,8 @@ class NN_model(NNBaseClass):
         decay_l = Dense(128)(decay_l)
         decay_l = LeakyReLU()(decay_l)
         decay_l = Dropout(0.2)(decay_l)
-        decay_output = Dense(32, activation='softmax')(decay_l)
+        decay_l = Dense(32)(decay_l)
+        decay_output = LeakyReLU()(decay_l)
 
         # Create joint embedding layer
         pdg_embedding = Embedding(
@@ -87,7 +88,7 @@ class NN_model(NNBaseClass):
 
         # for i in range(4):
         #     particle_l = self._resnet_node(particle_l, filters=64, avg_pool=2)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=4, filters=64)
         particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
         particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
         particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
@@ -104,7 +105,7 @@ class NN_model(NNBaseClass):
         comb_l = concatenate([decay_output, particle_output], axis=-1)
         comb_l = Dense(256)(comb_l)
         comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.5)(comb_l)
+        comb_l = Dropout(0.4)(comb_l)
         comb_l = Dense(128)(comb_l)
         comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.4)(comb_l)

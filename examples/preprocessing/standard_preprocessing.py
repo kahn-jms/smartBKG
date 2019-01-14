@@ -4,6 +4,7 @@
 
 import os
 import argparse
+import pandas as pd
 
 from smartBKG.preprocessing import MCParticlesPreprocManager  # type:ignore
 

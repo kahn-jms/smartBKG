@@ -26,7 +26,7 @@ class NN_model(NNBaseClass):
         self.shape_dict = shape_dict
         self.num_pdg_codes = num_pdg_codes
 
-        adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
+        adam = optimizers.Adam(lr=0.0001, amsgrad=True)  # best so far
         # nadam = optimizers.Nadam(lr=0.002)
         # adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
         # adadelta = optimizers.Adadelta(lr=1.0, epsilon=None, decay=0.0)
@@ -58,13 +58,14 @@ class NN_model(NNBaseClass):
 
         # Put it all together, outputs 4xfilter_size = 128
         # decay_l = concatenate([decay_4, decay_5, decay_6, decay_7, decay_8, decay_9], axis=-1)
-        decay_l = concatenate(wide_layers, axis=-1)
+        # decay_l = concatenate(wide_layers, axis=-1)
+        decay_l = Add()(wide_layers)
 
         # decay_l = Dropout(0.4)(decay_l)
         decay_l = Dense(128)(decay_l)
         decay_l = LeakyReLU()(decay_l)
-        decay_l = Dropout(0.3)(decay_l)
-        decay_l = Dense(32)(decay_l)
+        # decay_l = Dropout(0.3)(decay_l)
+        decay_l = Dense(8)(decay_l)
         decay_output = LeakyReLU()(decay_l)
 
         # Create joint embedding layer
@@ -87,40 +88,55 @@ class NN_model(NNBaseClass):
         # Put all the particle
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
-        for i in range(4):
-            particle_l = self._conv1D_node(
-                particle_l,
-                filters=64,
-                kernel_size=1,
-                # dropout=0
-            )
+        particle_l = self._resnet_node(particle_l, kernels=1, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=1, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=1, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=1, filters=64)
 
-        particle_m = particle_l
-        particle_m = self.conv1D_avg_node(
-            particle_m,
-            filters=64,
-            kernel_size=4,
-            # pool='avg',
-            # dropout=0.4
-        )
-        # for i in range(2):
-        #     # particle_m = self._conv1D_node(
-        #     particle_m = self.conv1D_avg_node(
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128, pool='avg')
+
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
+
+        # for i in range(4):
+        #     particle_l = self._conv1D_node(
+        #         particle_l,
+        #         filters=64,
+        #         kernel_size=1,
+        #         # dropout=0
+        #     )
+
+        # particle_m = particle_l
+        # particle_m = self.conv1D_avg_node(
+        #     particle_m,
+        #     filters=64,
+        #     kernel_size=4,
+        #     # pool='avg',
+        #     # dropout=0.4
+        # )
+        # # for i in range(2):
+        # #     # particle_m = self._conv1D_node(
+        # #     particle_m = self.conv1D_avg_node(
+        # #         particle_m,
+        # #         filters=64,
+        # #         kernel_size=4,
+        # #         # dropout=0.4
+        # #     )
+        # for i in range(3):
+        #     particle_m = self._conv1D_node(
         #         particle_m,
         #         filters=64,
-        #         kernel_size=4,
+        #         kernel_size=3,
         #         # dropout=0.4
         #     )
-        for i in range(3):
-            particle_m = self._conv1D_node(
-                particle_m,
-                filters=64,
-                kernel_size=3,
-                # dropout=0.4
-            )
 
         # Add residual loopback to stop vanishing gradients
-        particle_l = Add()([particle_l, particle_m])
+        # particle_l = Add()([particle_l, particle_m])
 
         # Compress
         # particle_output = AveragePooling1D(pool_size=2)(particle_l)
@@ -141,7 +157,7 @@ class NN_model(NNBaseClass):
         comb_l = concatenate([decay_output, particle_output], axis=-1)
         comb_l = Dense(128)(comb_l)
         comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.3)(comb_l)
+        # comb_l = Dropout(0.3)(comb_l)
         comb_l = Dense(64)(comb_l)
         comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.3)(comb_l)
@@ -153,7 +169,7 @@ class NN_model(NNBaseClass):
         model = Model(
             inputs=[decay_input, particle_input, pdg_input, mother_pdg_input],
             outputs=comb_output,
-            name='combined-wideCNN'
+            name='combined-1x1-ResNet'
         )
         # Finally compile the model
         model.compile(

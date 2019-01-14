@@ -26,7 +26,7 @@ class NN_model(NNBaseClass):
         self.shape_dict = shape_dict
         self.num_pdg_codes = num_pdg_codes
 
-        adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
+        adam = optimizers.Adam(lr=0.0005, amsgrad=True)  # best so far
         # nadam = optimizers.Nadam(lr=0.002)
         # adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
         # adadelta = optimizers.Adadelta(lr=1.0, epsilon=None, decay=0.0)
@@ -56,10 +56,10 @@ class NN_model(NNBaseClass):
 
         # for i in range(4):
         #     particle_l = self._resnet_node(particle_l, filters=64, avg_pool=2)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0, avg_pool=2)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0, avg_pool=2)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, dropout=0)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, pool='avg')
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=64, pool='avg')
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=32)
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=32)
 
         # Flatten (not really)
         particle_output = GlobalAveragePooling1D()(particle_l)
@@ -71,7 +71,7 @@ class NN_model(NNBaseClass):
 
         # Finally, combine the two networks
         # comb_l = concatenate([decay_output, particle_output], axis=-1)
-        comb_l = Dense(256)(particle_output)
+        comb_l = Dense(512)(particle_output)
         comb_l = LeakyReLU()(comb_l)
         comb_l = Dropout(0.4)(comb_l)
         comb_l = Dense(128)(comb_l)
@@ -97,38 +97,38 @@ class NN_model(NNBaseClass):
 
         self.model = model
 
-    def _resnet_node(
-        self,
-        input_layer,
-        n_layers=2,
-        kernels=3,
-        filters=32,
-        dropout=0,
-        avg_pool=0,
-    ):
-        ''' Builds a standard resnet block including identity hop '''
-        input_filters = int(input_layer.shape[-1])
+    # def _resnet_node(
+    #     self,
+    #     input_layer,
+    #     n_layers=2,
+    #     kernels=3,
+    #     filters=33,
+    #     dropout=0,
+    #     avg_pool=0,
+    # ):
+    #     ''' Builds a standard resnet block including identity hop '''
+    #     input_filters = int(input_layer.shape[-1])
 
-        layer = input_layer
-        for i in range(n_layers - 1):
-            layer = self._conv1D_node(
-                layer,
-                filters=filters,
-                kernel_size=kernels,
-                dropout=dropout,
-            )
+    #     layer = input_layer
+    #     for i in range(n_layers - 1):
+    #         layer = self._conv1D_node(
+    #             layer,
+    #             filters=filters,
+    #             kernel_size=kernels,
+    #             dropout=dropout,
+    #         )
 
-        # Final layer in node needs to have same shape as input to do Add
-        layer = self._conv1D_node(
-            layer,
-            filters=input_filters,
-            kernel_size=kernels,
-            # dropout=dropout,
-        )
+    #     # Final layer in node needs to have same shape as input to do Add
+    #     layer = self._conv1D_node(
+    #         layer,
+    #         filters=input_filters,
+    #         kernel_size=kernels,
+    #         # dropout=dropout,
+    #     )
 
-        layer = Add()([layer, input_layer])
-        layer = LeakyReLU()(layer)
-        if avg_pool:
-            layer = AveragePooling1D(pool_size=avg_pool)(layer)
+    #     layer = Add()([layer, input_layer])
+    #     layer = LeakyReLU()(layer)
+    #     if avg_pool:
+    #         layer = AveragePooling1D(pool_size=avg_pool)(layer)
 
-        return layer
+    #     return layer

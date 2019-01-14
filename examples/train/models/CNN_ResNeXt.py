@@ -28,8 +28,8 @@ class NN_model(NNBaseClass):
         self.num_pdg_codes = num_pdg_codes
         self.cardinality = cardinality
 
-        # adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
-        adam = optimizers.Adam(lr=0.001)
+        adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
+        # adam = optimizers.Adam(lr=0.001)
         # nadam = optimizers.Nadam(lr=0.002)
         # adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
         # adadelta = optimizers.Adadelta(lr=1.0, epsilon=None, decay=0.0)
@@ -62,11 +62,12 @@ class NN_model(NNBaseClass):
         # Put it all together, outputs 4xfilter_size = 128
         decay_l = concatenate(wide_layers, axis=-1)
 
-        decay_l = Dropout(0.5)(decay_l)
+        # decay_l = Dropout(0.5)(decay_l)
         decay_l = Dense(128)(decay_l)
         decay_l = LeakyReLU()(decay_l)
         decay_l = Dropout(0.3)(decay_l)
-        decay_output = Dense(64, activation='softmax')(decay_l)
+        decay_l = Dense(64)(decay_l)
+        decay_output = LeakyReLU()(decay_l)
 
         # Create joint embedding layer
         pdg_embedding = Embedding(
@@ -89,13 +90,15 @@ class NN_model(NNBaseClass):
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
         # Create initial convolutional layer
-        initial_filters = 128
-        particle_l = self._conv1D_node(
-            particle_l,
-            filters=initial_filters,
-            kernel_size=3,
-            dropout=0.3,
-        )
+        initial_filters = 64
+        particle_l = self._conv1D_node(particle_l, filters=initial_filters, kernel_size=3, strides=1)
+        # particle_l = self._conv1D_node(
+        #     particle_l,
+        #     filters=initial_filters,
+        #     kernel_size=3,
+        #     dropout=0.3,
+        # )
+        particle_l = MaxPooling1D(pool_size=2)(particle_l)
 
         # Build wide ResNeXt blocks
         # ######
@@ -105,7 +108,7 @@ class NN_model(NNBaseClass):
             cardinality=self.cardinality,
             grouped_channels=int(initial_filters / self.cardinality),
             # Args for expanded block
-            kernels=[3, 3],
+            kernels=[1, 3, 1],
             filters=4,
             dropout=0,
         )
@@ -122,7 +125,7 @@ class NN_model(NNBaseClass):
             cardinality=self.cardinality,
             grouped_channels=int(initial_filters / self.cardinality),
             # Args for expanded block
-            kernels=[3, 3,],
+            kernels=[1, 3, 1],
             filters=4,
             dropout=0,
         )
@@ -154,7 +157,7 @@ class NN_model(NNBaseClass):
         model = Model(
             inputs=[decay_input, particle_input, pdg_input, mother_pdg_input],
             outputs=comb_output,
-            name='combined-wideCNN'
+            name='ResNeXt-wideCNN'
         )
         # Finally compile the model
         model.compile(

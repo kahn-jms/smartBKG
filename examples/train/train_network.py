@@ -188,7 +188,7 @@ if __name__ == '__main__':
     earlyStop = callbacks.EarlyStopping(
         monitor='val_loss',
         min_delta=0,
-        patience=sub_epochs * 3,
+        patience=sub_epochs * 4,
         verbose=1,
         mode='auto'
     )

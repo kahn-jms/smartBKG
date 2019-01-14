@@ -67,10 +67,12 @@ class CompareTrainingMetrics():
         '''
         metrics_df = self.metrics_df
         if trunc:
-            metrics_df.index = metrics_df.index.map(mapper=(lambda x: (re.sub(r'_20.*', '', x[0]), *(x[1:])) ))
+            metrics_df.index = metrics_df.index.map(mapper=(lambda x: (re.sub(r'_20.*', '', x[0]), *(x[1:]))))
 
         plt.figure()
-        self.metrics_df.unstack(level=0)[metrics].plot()
+        self.metrics_df.unstack(level=0)[metrics].plot(
+            # ylim=(0.3, 1.),  # Option to add later for wildly varying val_acc
+        )
 
         # If timestamps are included need to shrink legend to fit
         if trunc:

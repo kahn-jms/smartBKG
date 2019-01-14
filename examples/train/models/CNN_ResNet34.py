@@ -62,7 +62,7 @@ class NN_model(NNBaseClass):
         # decay_l = Dropout(0.4)(decay_l)
         decay_l = Dense(128)(decay_l)
         decay_l = LeakyReLU()(decay_l)
-        decay_l = Dropout(0.2)(decay_l)
+        decay_l = Dropout(0.1)(decay_l)
         decay_output = Dense(32)(decay_l)
         decay_l = LeakyReLU()(decay_l)
 
@@ -86,7 +86,8 @@ class NN_model(NNBaseClass):
         # Put all the particle
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
-        particle_l = self._conv1D_node(particle_l, filters=64, kernel_size=7)
+        # particle_l = self._conv1D_node(particle_l, filters=64, kernel_size=7)
+        # particle_l = self._conv1D_node(particle_l, filters=64, kernel_size=3)
 
         # Block 1
         particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
@@ -120,11 +121,14 @@ class NN_model(NNBaseClass):
 
         # Finally, combine the two networks
         comb_l = concatenate([decay_output, particle_output], axis=-1)
-        comb_l = Dense(512)(particle_output)
+        comb_l = Dense(1024)(particle_output)
         comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.4)(comb_l)
-        comb_l = Dense(128)(comb_l)
-        comb_l = LeakyReLU()(comb_l)
+        # comb_l = Dropout(0.1)(comb_l)
+        # comb_l = Dense(64)(particle_output)
+        # comb_l = LeakyReLU()(comb_l)
+        # comb_l = Dropout(0.1)(comb_l)
+        # comb_l = Dense(32)(comb_l)
+        # comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.4)(comb_l)
         # comb_l = Dense(256)(comb_l)
         # comb_l = LeakyReLU()(comb_l)

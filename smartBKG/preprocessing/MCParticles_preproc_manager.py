@@ -20,8 +20,8 @@ class MCParticlesPreprocManager():
         self.cont_min = [0.0, 0.0, -700., -700., -700., -3.0, -3.0, -2.0]
         self.cont_max = [11.0, 150.0, 700., 700., 700., 3.0, 3.0, 4.0]
 
-        self.cont_min_series = pd.Series(self.cont_min, index=self.cont_vars)
-        self.cont_max_series = pd.Series(self.cont_max, index=self.cont_vars)
+        # self.cont_min_series = pd.Series(self.cont_min, index=self.cont_vars)
+        # self.cont_max_series = pd.Series(self.cont_max, index=self.cont_vars)
 
         self.disc_vars = ['charge', 'PDG', 'motherPDG']  # , 'nDaughters']
 
@@ -47,7 +47,8 @@ class MCParticlesPreprocManager():
     def _preproc_cont_vars(self, df):
         ''' Perform necessary preprocessing of self.cont_vars '''
         # Normalise continuous variables
-        return (df - self.cont_min_series) / (self.cont_max_series - self.cont_min_series)
+        # return (df - self.cont_min_series) / (self.cont_max_series - self.cont_min_series)
+        return df.apply(np.tanh)
 
     def _preproc_disc_vars(self, df):
         ''' Perform necessary preprocessing of self.disc_vars '''

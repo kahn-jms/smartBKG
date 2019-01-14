@@ -15,7 +15,7 @@ from smartBKG import evtPdl  # type:ignore
 class MCParticlesPreprocPandas():
     def __init__(self, train_frac=0.9):
         self.train_frac = train_frac
-        pd.set_option('display.expand_frame_repr', False)
+        # pd.set_option('display.expand_frame_repr', False)
 
         # Set maximum length of decay string elements
         self.num_pdg_codes = len(evtPdl.pdgTokens)

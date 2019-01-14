@@ -91,11 +91,11 @@ class NNBaseClass():
                 kernel_size=kernel_size,
                 # dropout=0.
             )
-            # Compress
-            if pool == 'max':
-                particle_l = MaxPooling1D(pool_size=2)(particle_l)
-            elif pool == 'avg':
-                particle_l = AveragePooling1D(pool_size=2)(particle_l)
+        # Compress
+        if pool == 'max':
+            particle_l = MaxPooling1D(pool_size=2)(particle_l)
+        elif pool == 'avg':
+            particle_l = AveragePooling1D(pool_size=2)(particle_l)
 
         return particle_l
 

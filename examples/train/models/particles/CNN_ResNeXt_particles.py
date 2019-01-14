@@ -21,7 +21,7 @@ class NN_model(NNBaseClass):
         self,
         shape_dict,
         num_pdg_codes,
-        cardinality=32,
+        cardinality=16,
     ):
         super().__init__()
         self.shape_dict = shape_dict
@@ -56,17 +56,37 @@ class NN_model(NNBaseClass):
         # Put all the particle
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
-        # initial_filters = 64
-        particle_l = self._conv1D_node(particle_l, filters=64, kernel_size=7, strides=2)
+        initial_filters = 64
+        particle_l = self._conv1D_node(particle_l, filters=initial_filters, kernel_size=3, strides=1)
+        # particle_l = self._conv1D_node(particle_l, filters=initial_filters, kernel_size=7, strides=2)
+        # particle_l = self._conv1D_node(particle_l, filters=32, kernel_size=3)
         # Should add maxpool here -- don't need, just reduces input size
-        # particle_l = MaxPooling1D(pool_size=3, strides=2)(particle_l)
+        # particle_l = MaxPooling1D(pool_size=2, strides=2)(particle_l)
+        particle_l = MaxPooling1D(pool_size=2)(particle_l)
 
         # Block 1
         # Output shape = cardinality x output shape
         particle_r = self._grouped_convolution_block(
             input_layer=particle_l,
             cardinality=self.cardinality,
-            grouped_channels=int(64 / self.cardinality),
+            grouped_channels=int(initial_filters / self.cardinality),
+            # Args for expanded block
+            kernels=[1, 3, 1],
+            filters=4,
+            dropout=0,
+        )
+
+        # Here allow input from before ResNeXt block too
+        particle_l = Add()([particle_l, particle_r])
+        # This needs a nonlinear activation too for some reason?
+        particle_l = LeakyReLU()(particle_l)
+
+        # Block 2
+        # Output shape = cardinality x output shape
+        particle_r = self._grouped_convolution_block(
+            input_layer=particle_l,
+            cardinality=self.cardinality,
+            grouped_channels=int(initial_filters / self.cardinality),
             # Args for expanded block
             kernels=[1, 3, 1],
             filters=4,
@@ -88,11 +108,11 @@ class NN_model(NNBaseClass):
 
         # Finally, combine the two networks
         # comb_l = concatenate([decay_output, particle_output], axis=-1)
-        comb_l = Dense(512, activation='softmax')(particle_output)
-        # comb_l = LeakyReLU()(comb_l)
+        comb_l = Dense(512)(particle_output)
+        comb_l = LeakyReLU()(comb_l)
         comb_l = Dropout(0.5)(comb_l)
-        comb_l = Dense(128, activation='softmax')(comb_l)
-        # comb_l = LeakyReLU()(comb_l)
+        comb_l = Dense(128)(comb_l)
+        comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.4)(comb_l)
         # comb_l = Dense(256)(comb_l)
         # comb_l = LeakyReLU()(comb_l)
