@@ -6,6 +6,7 @@
 
 import os
 import pandas as pd
+import numpy as np
 from sklearn import metrics
 import matplotlib.pyplot as plt
 
@@ -77,8 +78,8 @@ class PlotAUCROC():
     def _plot_model_ROCs(self, models_dict, out_dir):
         ''' Plot ROC of given models together '''
         out_file = os.path.join(out_dir, 'ROC_comparison.pdf')
-        plt.figure()
-        plt.title('Receiver Operating Characteristic')
+        plt.figure(figsize=(5, 3.5))
+        # plt.title('Receiver Operating Characteristic')
 
         for model in models_dict.keys():
             print('model:', model)
@@ -86,14 +87,20 @@ class PlotAUCROC():
                 models_dict[model]['fpr'],
                 models_dict[model]['tpr'],
                 'b',
-                label='{} = {:.2f}'.format(model, models_dict[model]['auc'])
+                # label='{} = {:.2f}'.format(model, models_dict[model]['auc'])
+                label='AUC = {:.3f}'.format(models_dict[model]['auc']),
+                linewidth=1,
             )
         plt.legend(loc='best')
-        plt.plot([0, 1], [0, 1], 'r--')
+        plt.plot([0, 1], [0, 1], 'r--', linewidth=1)
         plt.xlim([0, 1])
         plt.ylim([0, 1])
         plt.ylabel('True Positive Rate')
         plt.xlabel('False Positive Rate')
+        ax = plt.gca()
+        ax.set_xticks(np.arange(0, 1, 0.1))
+        ax.set_yticks(np.arange(0, 1., 0.1))
+        plt.grid(linewidth=1, linestyle=':')
 
         plt.savefig(out_file)
 
@@ -101,12 +108,13 @@ class PlotAUCROC():
         ''' Plot a single ROC curve to file '''
         out_file = os.path.join(out_dir, '{}_ROC.pdf'.format(model))
 
-        plt.title('Receiver Operating Characteristic')
+        # plt.title('Receiver Operating Characteristic')
         plt.plot(
             fpr,
             tpr,
             'b',
-            label='{} = {:.2f}'.format(model, roc_auc)
+            # label='{} = {:.2f}'.format(model, roc_auc)
+            label='AUC = {:.2f}'.format(roc_auc)
         )
         plt.legend(loc='best')
         plt.plot([0, 1], [0, 1], 'r--')
