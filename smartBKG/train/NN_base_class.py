@@ -55,7 +55,7 @@ class NNBaseClass():
         input_layer,
         filters=32,
         kernel_size=3,
-        dropout=0,
+        batchnorm=True,
         **kwargs
     ):
         ''' Build a standard conv1D node '''
@@ -63,15 +63,14 @@ class NNBaseClass():
             filters=filters,
             kernel_size=kernel_size,
             padding='same',
-            use_bias=False,
+            use_bias=(not batchnorm),
             # kernel_initializer='he_normal',
             # kernel_regularizer=l1_l2(l1=0.001, l2=0.05),
             **kwargs,
         )(input_layer)
-        layer = BatchNormalization()(layer)
+        if batchnorm:
+            layer = BatchNormalization()(layer)
         layer = LeakyReLU()(layer)
-        if dropout:
-            layer = Dropout(dropout)(layer)
 
         return layer
 
@@ -81,6 +80,7 @@ class NNBaseClass():
         filters=64,
         kernel_size=3,
         pool=None,
+        **kwargs,
     ):
         ''' Collective convolutional node '''
         particle_l = input_l
@@ -89,7 +89,7 @@ class NNBaseClass():
                 particle_l,
                 filters=filters,
                 kernel_size=kernel_size,
-                # dropout=0.
+                **kwargs,
             )
         # Compress
         if pool == 'max':
@@ -105,7 +105,6 @@ class NNBaseClass():
         n_layers=2,
         kernels=3,
         filters=32,
-        dropout=0,
         pool=None,
     ):
         ''' Builds a standard resnet block including identity hop '''
@@ -117,16 +116,23 @@ class NNBaseClass():
                 layer,
                 filters=filters,
                 kernel_size=kernels,
-                dropout=dropout,
+                # batchnorm=False,
             )
 
         # Final layer in node needs to have same shape as input to do Add
-        layer = self._conv1D_node(
-            layer,
+        # layer = self._conv1D_node(
+        #     layer,
+        #     filters=input_filters,
+        #     kernel_size=kernels,
+        # )
+        layer = Conv1D(
             filters=input_filters,
             kernel_size=kernels,
-            # dropout=dropout,
-        )
+            padding='same',
+            # kernel_initializer='he_normal',
+            # kernel_regularizer=l1_l2(l1=0.001, l2=0.05),
+            # **kwargs,
+        )(layer)
 
         layer = Add()([layer, input_layer])
         layer = LeakyReLU()(layer)

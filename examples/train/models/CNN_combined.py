@@ -26,7 +26,7 @@ class NN_model(NNBaseClass):
         self.shape_dict = shape_dict
         self.num_pdg_codes = num_pdg_codes
 
-        adam = optimizers.Adam(lr=0.0005, amsgrad=True)  # best so far
+        adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
         # adam = optimizers.Adam(lr=0.001)  # best so far
         # nadam = optimizers.Nadam(lr=0.002)
         # adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
@@ -63,7 +63,7 @@ class NN_model(NNBaseClass):
         # decay_l = Dropout(0.4)(decay_l)
         decay_l = Dense(128)(decay_l)
         decay_l = LeakyReLU()(decay_l)
-        decay_l = Dropout(0.3)(decay_l)
+        # decay_l = Dropout(0.3)(decay_l)
         decay_l = Dense(32)(decay_l)
         decay_output = LeakyReLU()(decay_l)
 
@@ -92,16 +92,18 @@ class NN_model(NNBaseClass):
             particle_l,
             filters=64,
             kernel_size=3,
-            pool='avg',
+            # pool='avg',
             # dropout=0.3
+            batchnorm=False,
         )
-        for i in range(2):
-            particle_l = self.conv1D_avg_node(
-                particle_l,
-                filters=64,
-                kernel_size=3,
-                # dropout=0.3
-            )
+        # for i in range(2):
+        #     particle_l = self.conv1D_avg_node(
+        #         particle_l,
+        #         filters=64,
+        #         kernel_size=3,
+        #         # dropout=0.3
+        #         batchnorm=False,
+        #     )
         # Compress
         # particle_l = AveragePooling1D(pool_size=2)(particle_l)
 
@@ -145,12 +147,12 @@ class NN_model(NNBaseClass):
         comb_l = concatenate([decay_output, particle_output], axis=-1)
         comb_l = Dense(512)(comb_l)
         comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.3)(comb_l)
-        comb_l = Dense(512)(comb_l)
-        comb_l = LeakyReLU()(comb_l)
-        comb_l = Dropout(0.3)(comb_l)
-        comb_l = Dense(512)(comb_l)
-        comb_l = LeakyReLU()(comb_l)
+        # comb_l = Dropout(0.3)(comb_l)
+        # comb_l = Dense(512)(comb_l)
+        # comb_l = LeakyReLU()(comb_l)
+        # # comb_l = Dropout(0.3)(comb_l)
+        # comb_l = Dense(512)(comb_l)
+        # comb_l = LeakyReLU()(comb_l)
         comb_output = Dense(1, activation='sigmoid', name='y_output')(comb_l)
 
         # Instantiate the cnn model
