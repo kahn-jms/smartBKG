@@ -92,7 +92,7 @@ class PlotBias():
             print(uni.head())
             # diff = uni.divide(np.sqrt(counts))
             # diff = uni.divide(counts)
-            diff = uni.sub(norm_counts).divide(np.sqrt(norm_counts))
+            diff = uni.sub(norm_counts).divide(np.sqrt(np.abs(norm_counts)))
             diff = diff.dropna()
             print(diff.head())
             ax = diff.plot()
@@ -122,7 +122,7 @@ class PlotBias():
             #     **self.color_args,
             # )
 
-        ax.set_xticklabels([c for c in df['binned'].cat.categories])
+        ax.set_xticklabels(['{:.4f}'.format(c.mid) for c in cut_df['binned'].cat.categories])
         plt.legend(loc='best')
         plt.xlabel(mrc.invertMakeRootCompatible(x))
         # if self.color_args['density']:

@@ -79,18 +79,31 @@ else:
 # Override event number -- use skip-events flag for basf2 instead -- easy in htcondor
 # set_module_parameters(path=main, name='EventInfoSetter', recursive=False, runList=[0], expList=[0])
 
-for model, model_type in zip(args.model, args.model_type):
-    NNApplyModule_m = NNApplyModule(
-        model_file=model,
-        model_type=model_type,
-        threshold=args.threshold,
-    )
-    dead_path = b2.create_path()
-    NNApplyModule_m.if_false(dead_path)
+NNApplyModule_m = NNApplyModule(
+    model_file=args.model[0],
+    model_type=args.model_type[0],
+    threshold=args.threshold,
+    extra_info_var='smartBKG'
 
-    main.add_module(NNApplyModule_m)
-    # Do I need this here?
-    # c1.set_property_flags(b2.ModulePropFlags.PARALLELPROCESSINGCERTIFIED)
+)
+dead_path = b2.create_path()
+NNApplyModule_m.if_false(dead_path)
+
+main.add_module(NNApplyModule_m)
+
+# For multiple models
+# for model, model_type in zip(args.model, args.model_type):
+#     NNApplyModule_m = NNApplyModule(
+#         model_file=model,
+#         model_type=model_type,
+#         threshold=args.threshold,
+#     )
+#     dead_path = b2.create_path()
+#     NNApplyModule_m.if_false(dead_path)
+
+#     main.add_module(NNApplyModule_m)
+#     # Do I need this here?
+#     # c1.set_property_flags(b2.ModulePropFlags.PARALLELPROCESSINGCERTIFIED)
 
 
 # ma.loadGearbox(path=main)
