@@ -17,11 +17,33 @@ class MCParticlesPreprocManager():
         self.ppp = MCParticlesPreprocPandas()
 
         self.cont_vars = ['energy', 'prodTime', 'x', 'y', 'z', 'px', 'py', 'pz']
-        self.cont_min = [0.0, 0.0, -700., -700., -700., -3.0, -3.0, -2.0]
-        self.cont_max = [11.0, 150.0, 700., 700., 700., 3.0, 3.0, 4.0]
+        # self.cont_min = [0.0, 0.0, -700., -700., -700., -3.0, -3.0, -2.0]
+        # self.cont_max = [11.0, 150.0, 700., 700., 700., 3.0, 3.0, 4.0]
+        # Values obtained automatically from subset of MCParticles
+        self.cont_mean = [
+            1.26257171404669,
+            0.05890088167950489,
+            0.04414757085741595,
+            -0.00265970402649008,
+            0.3737106843126124,
+            0.05253655583789957,
+            -4.23090263104822e-05,
+            0.344737685298959
+        ]
+        self.cont_std = [
+            2.0057599256131553,
+            0.7272543277442086,
+            5.879198954800914,
+            5.895932291059462,
+            7.292860628527212,
+            0.42971772214234305,
+            0.42181551657083644,
+            0.683827892849276]
 
         # self.cont_min_series = pd.Series(self.cont_min, index=self.cont_vars)
         # self.cont_max_series = pd.Series(self.cont_max, index=self.cont_vars)
+        self.cont_mean_series = pd.Series(self.cont_mean, index=self.cont_vars)
+        self.cont_std_series = pd.Series(self.cont_std, index=self.cont_vars)
 
         self.disc_vars = ['charge', 'PDG', 'motherPDG']  # , 'nDaughters']
 
@@ -48,7 +70,12 @@ class MCParticlesPreprocManager():
         ''' Perform necessary preprocessing of self.cont_vars '''
         # Normalise continuous variables
         # return (df - self.cont_min_series) / (self.cont_max_series - self.cont_min_series)
-        return df.apply(np.tanh)
+        # Simple tanh
+        # return df.apply(np.tanh)
+        # tanh-estimator
+        return df.apply(
+            lambda x: 0.5 * (np.tanh(0.01 * ((x - self.cont_mean_series[x.name]) / self.cont_std_series[x.name]) + 1))
+        )
 
     def _preproc_disc_vars(self, df):
         ''' Perform necessary preprocessing of self.disc_vars '''

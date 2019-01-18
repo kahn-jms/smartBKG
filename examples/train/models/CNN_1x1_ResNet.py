@@ -26,7 +26,7 @@ class NN_model(NNBaseClass):
         self.shape_dict = shape_dict
         self.num_pdg_codes = num_pdg_codes
 
-        adam = optimizers.Adam(lr=0.0001, amsgrad=True)  # best so far
+        adam = optimizers.Adam(lr=0.0005, amsgrad=True)  # best so far
         # nadam = optimizers.Nadam(lr=0.002)
         # adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
         # adadelta = optimizers.Adadelta(lr=1.0, epsilon=None, decay=0.0)
@@ -53,13 +53,18 @@ class NN_model(NNBaseClass):
                 filters=32,
                 kernel_size=i,
             )
+            # layer_w = self._conv1D_node(
+            #     layer_w,
+            #     filters=32,
+            #     kernel_size=i,
+            # )
             layer_w = GlobalAveragePooling1D()(layer_w)
             wide_layers.append(layer_w)
 
         # Put it all together, outputs 4xfilter_size = 128
         # decay_l = concatenate([decay_4, decay_5, decay_6, decay_7, decay_8, decay_9], axis=-1)
-        # decay_l = concatenate(wide_layers, axis=-1)
-        decay_l = Add()(wide_layers)
+        decay_l = concatenate(wide_layers, axis=-1)
+        # decay_l = Add()(wide_layers)
 
         # decay_l = Dropout(0.4)(decay_l)
         decay_l = Dense(128)(decay_l)
@@ -96,7 +101,8 @@ class NN_model(NNBaseClass):
         particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
         particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
         particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=128, pool='avg')
+        # particle_l = self._resnet_node(particle_l, kernels=3, filters=128, pool='avg')
+        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
 
         particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
         particle_l = self._resnet_node(particle_l, kernels=3, filters=64)
@@ -157,7 +163,7 @@ class NN_model(NNBaseClass):
         comb_l = concatenate([decay_output, particle_output], axis=-1)
         comb_l = Dense(128)(comb_l)
         comb_l = LeakyReLU()(comb_l)
-        # comb_l = Dropout(0.3)(comb_l)
+        comb_l = Dropout(0.3)(comb_l)
         comb_l = Dense(64)(comb_l)
         comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.3)(comb_l)

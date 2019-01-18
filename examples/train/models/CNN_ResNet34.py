@@ -11,7 +11,6 @@ from keras.layers import Dense, Dropout, Input
 from keras.layers import LeakyReLU
 from keras.layers import Conv1D, GlobalAveragePooling1D, MaxPooling1D, AveragePooling1D
 from keras.layers import Embedding
-from keras.layers import BatchNormalization
 from keras.layers import concatenate
 from keras import optimizers
 
@@ -26,12 +25,13 @@ class NN_model(NNBaseClass):
         self.shape_dict = shape_dict
         self.num_pdg_codes = num_pdg_codes
 
-        adam = optimizers.Adam(lr=0.001, amsgrad=True)  # best so far
+        adam = optimizers.Adam(lr=0.0005, amsgrad=True)  # best so far
         # nadam = optimizers.Nadam(lr=0.002)
         # adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0)
         # adadelta = optimizers.Adadelta(lr=1.0, epsilon=None, decay=0.0)
         # rmsProp = optimizers.RMSprop(lr=0.001)
-        self.optimizer = adam
+        sgd = optimizers.SGD(lr=0.01)
+        self.optimizer = sgd
 
     def build_model(self):
         # Create joint embedding layer (decay strings)
@@ -62,7 +62,7 @@ class NN_model(NNBaseClass):
         # decay_l = Dropout(0.4)(decay_l)
         decay_l = Dense(128)(decay_l)
         decay_l = LeakyReLU()(decay_l)
-        decay_l = Dropout(0.1)(decay_l)
+        # decay_l = Dropout(0.1)(decay_l)
         decay_output = Dense(32)(decay_l)
         decay_l = LeakyReLU()(decay_l)
 
