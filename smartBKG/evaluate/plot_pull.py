@@ -108,6 +108,7 @@ class PlotPull():
             df['{}_nocut'.format(var)] + df['{}_cut'.format(var)]
         )
         # Need to scale this now
+        # Then plot
 
         return df
 
