@@ -44,6 +44,7 @@ class PlotPull():
             # Could move this call into create_var_counts or move create_var_counts
             # call into calc_diff_metrics is better
             cut_df = self._calc_diff_metrics(cut_df, var)
+            print(cut_df.head())
             self._plot_metrics(cut_df, var, threshold)
 
     def _norm_df(self, df):
@@ -66,12 +67,31 @@ class PlotPull():
             '{}_nocut'.format(var),
             '{}_cut'.format(var),
         ]].plot(
-            kind='area',
+            kind='line',
             # bins=30,
             grid=True,
             stacked=False,
-            ax=ax1,
             alpha=0.5,
+            # yerr=df[[
+            #     '{}_nocut_err'.format(var),
+            #     '{}_cut_err'.format(var),
+            # ]].values.T,
+            ax=ax1,
+        )
+        # Draw error bands
+        ax1.fill_between(
+            range(len(df.index)),
+            df['{}_nocut'.format(var)] + df['{}_nocut_err'.format(var)],
+            df['{}_nocut'.format(var)] - df['{}_nocut_err'.format(var)],
+            facecolor='blue',
+            alpha=0.3,
+        )
+        ax1.fill_between(
+            range(len(df.index)),
+            df['{}_cut'.format(var)] + df['{}_cut_err'.format(var)],
+            df['{}_cut'.format(var)] - df['{}_cut_err'.format(var)],
+            facecolor='orange',
+            alpha=0.3,
         )
         ax1.legend(['Without cut', 'NN prediction > {}'.format(threshold)])
         # ax1.legend(loc='best')
@@ -81,8 +101,17 @@ class PlotPull():
         ax2 = plt.subplot2grid((4, 1), (3, 0), rowspan=1)
         df['{}_diff'.format(var)].plot(
             grid=True,
-            ax=ax2
             # sharex=True,
+            color='red',
+            ax=ax2,
+        )
+        # Draw error bands
+        ax2.fill_between(
+            range(len(df.index)),
+            df['{}_diff'.format(var)] + df['{}_diff_err'.format(var)],
+            df['{}_diff'.format(var)] - df['{}_diff_err'.format(var)],
+            facecolor='red',
+            alpha=0.3,
         )
 
         # Decorate
@@ -92,7 +121,8 @@ class PlotPull():
         plt.xlabel(
             self.vars_df.loc[self.vars_df['variable'] == var]['title'].values[0]
         )
-        plt.ylabel('Error')
+        ax1.set(ylabel='No. events (normalised)')
+        ax2.set(ylabel='Asymmetry')
         # plt.axhline(
         #     y=0.,
         #     color='tab:green'
@@ -102,13 +132,20 @@ class PlotPull():
     def _calc_diff_metrics(self, df, var):
         ''' Calculate cut metrics '''
         # Normalised difference
-        df['{}_diff'.format(var)] = (
-            df['{}_nocut'.format(var)] - df['{}_cut'.format(var)]
-        ) / (
-            df['{}_nocut'.format(var)] + df['{}_cut'.format(var)]
+        num = df['{}_nocut'.format(var)] - df['{}_cut'.format(var)]
+        den = df['{}_nocut'.format(var)] + df['{}_cut'.format(var)]
+        df['{}_diff'.format(var)] = num / den
+
+        # Now need to propagate error
+        # First get error for numerator and denominator (same, quadrature)
+        df['{}_diff_err'.format(var)] = np.sqrt(
+            df['{}_nocut_err'.format(var)]**2 + df['{}_cut_err'.format(var)]**2
         )
-        # Need to scale this now
-        # Then plot
+        # Then handle the division
+        df['{}_diff_err'.format(var)] = np.abs(df['{}_diff'.format(var)]) * np.sqrt(
+            (df['{}_diff_err'.format(var)] / num)**2 +
+            (df['{}_diff_err'.format(var)] / den)**2
+        )
 
         return df
 
