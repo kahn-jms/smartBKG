@@ -47,4 +47,4 @@ if __name__ == '__main__':
         var_file=args.var,
     )
     for t in args.thresholds:
-        plot_pull.plot_threshold(t)
+        plot_pull.plot_threshold(t, args.out_dir)
