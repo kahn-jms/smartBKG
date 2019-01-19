@@ -16,7 +16,7 @@ import argparse  # noqa
 import root_pandas  # noqa
 
 
-class PlotPull():
+class PlotAsymmetry():
     ''' Class to load Ntuple and plot pulls for threshold cut '''
     def __init__(self, files, var_file, model=None, tree='variables'):
         self.files = files
@@ -45,12 +45,12 @@ class PlotPull():
             cut_df, pre_evts, post_evts = self._create_var_counts(self.df, var, threshold)
             # Could move this call into create_var_counts or move create_var_counts
             # call into calc_diff_metrics is better
-            err_df = self._calc_err(cut_df)
-            comb_df = self._norm_df(cut_df, err_df)
-            cut_df, err_df = self._calc_diff_metrics(cut_df, err_df, var)
-            print(comb_df.head())
+            cut_df = self._add_stat_err(cut_df)
+            # comb_df = self._norm_df(cut_df, err_df)
+            cut_df = self._calc_diff_metrics(cut_df, var)
+            print(cut_df.head())
             self._plot_metrics(
-                comb_df,
+                cut_df,
                 var,
                 threshold,
                 out_dir,
@@ -58,29 +58,31 @@ class PlotPull():
                 post=post_evts,
             )
 
-    def _calc_err(self, df):
+    def _add_stat_err(self, df):
         ''' Calcualte statistical uncertainty '''
         err_df = np.sqrt(df)
-        # return pd.concat([df, err_df.add_suffix('_err')], axis=1)
-        return err_df
-
-    def _norm_df(self, df, err_df):
-        ''' Normalise df, taking care of errors '''
-        # Normalise
-        # err_df = df.filter(regex=('.*_err'))
-        err_df = err_df / (df.max() - df.min())
-
-        # non_err_df = df.select(lambda col: not col.endswith('_err'), axis=1)
-        df = (df - df.min()) / (df.max() - df.min())
-
-        # return pd.concat([df, err_df], axis=1)
         return pd.concat([df, err_df.add_suffix('_err')], axis=1)
+
+    # def _norm_df(self, df, err_df):
+    #     ''' Normalise df, taking care of errors '''
+    #     # Normalise
+    #     # err_df = df.filter(regex=('.*_err'))
+    #     err_df = err_df / (df.max() - df.min())
+
+    #     # non_err_df = df.select(lambda col: not col.endswith('_err'), axis=1)
+    #     df = (df - df.min()) / (df.max() - df.min())
+
+    #     # return pd.concat([df, err_df], axis=1)
+    #     return pd.concat([df, err_df.add_suffix('_err')], axis=1)
 
     def _plot_metrics(self, df, var, threshold, out_dir, pre, post):
         ''' Plot metrics '''
         # As a first step need to create a label column from the index
         df = df.reset_index()
-        df['labels'] = df['index'].apply(lambda x: x.mid).astype(float)
+        if df['index'].dtype.name == 'category':
+            df['labels'] = df['index'].apply(lambda x: x.mid).astype(float)
+        else:
+            df['labels'] = df['index']
 
         # Cut to the plotting range requested (if requested)
         if not np.isnan(self.vars_df.loc[self.vars_df['variable'] == var]['low_x'].values[0]):
@@ -104,7 +106,9 @@ class PlotPull():
                 '{}_nocut'.format(var),
                 '{}_cut'.format(var),
             ],
-            kind='line',
+            kind='bar' if (
+                self.vars_df.loc[self.vars_df['variable'] == var]['bins'].values[0] == -1
+            ) else 'line',
             # bins=30,
             grid=True,
             stacked=False,
@@ -115,26 +119,31 @@ class PlotPull():
             #     self.vars_df.loc[self.vars_df['variable'] == var]['high_x'].values[0],
             # ) if not np.isnan(self.vars_df.loc[self.vars_df['variable'] == var]['low_x'].values[0])
             # else None,
-            # yerr=df[[
-            #     '{}_nocut_err'.format(var),
-            #     '{}_cut_err'.format(var),
-            # ]].values.T,
+            yerr=df[[
+                '{}_nocut_err'.format(var),
+                '{}_cut_err'.format(var),
+            ]].values.T if (
+                self.vars_df.loc[self.vars_df['variable'] == var]['bins'].values[0] == -1
+            ) else None,
         )
         # Draw error bands
-        ax1.fill_between(
-            df['labels'],
-            df['{}_nocut'.format(var)] + df['{}_nocut_err'.format(var)],
-            df['{}_nocut'.format(var)] - df['{}_nocut_err'.format(var)],
-            facecolor='blue',
-            alpha=0.3,
-        )
-        ax1.fill_between(
-            df['labels'],
-            df['{}_cut'.format(var)] + df['{}_cut_err'.format(var)],
-            df['{}_cut'.format(var)] - df['{}_cut_err'.format(var)],
-            facecolor='orange',
-            alpha=0.3,
-        )
+        if not (
+            self.vars_df.loc[self.vars_df['variable'] == var]['bins'].values[0] == -1
+        ):
+            ax1.fill_between(
+                df['labels'],
+                df['{}_nocut'.format(var)] + df['{}_nocut_err'.format(var)],
+                df['{}_nocut'.format(var)] - df['{}_nocut_err'.format(var)],
+                facecolor='blue',
+                alpha=0.3,
+            )
+            ax1.fill_between(
+                df['labels'],
+                df['{}_cut'.format(var)] + df['{}_cut_err'.format(var)],
+                df['{}_cut'.format(var)] - df['{}_cut_err'.format(var)],
+                facecolor='orange',
+                alpha=0.3,
+            )
         ax1.legend([
             'Without cut ({:d})'.format(pre),
             'NN prediction > {:.2f} ({:d})'.format(threshold, post)
@@ -152,6 +161,9 @@ class PlotPull():
             x='labels',
             y='{}_diff'.format(var),
             grid=True,
+            kind='bar' if (
+                self.vars_df.loc[self.vars_df['variable'] == var]['bins'].values[0] == -1
+            ) else 'line',
             # sharex=True,
             color='red',
             alpha=0.9,
@@ -164,19 +176,24 @@ class PlotPull():
             # )
             # else None,
             # ylim=(-1, 1),
-            ylim=(ymin, ymax),
-            # yerr=df[[
-            #     '{}_diff_err'.format(var),
-            # ]].values.T,
+            # ylim=(ymin, ymax),
+            yerr=df[[
+                '{}_diff_err'.format(var),
+            ]].values.T if (
+                self.vars_df.loc[self.vars_df['variable'] == var]['bins'].values[0] == -1
+            ) else None,
         )
         # Draw error bands
-        ax2.fill_between(
-            df['labels'],
-            df['{}_diff'.format(var)] + df['{}_diff_err'.format(var)],
-            df['{}_diff'.format(var)] - df['{}_diff_err'.format(var)],
-            facecolor='red',
-            alpha=0.3,
-        )
+        if not (
+            self.vars_df.loc[self.vars_df['variable'] == var]['bins'].values[0] == -1
+        ):
+            ax2.fill_between(
+                df['labels'],
+                df['{}_diff'.format(var)] + df['{}_diff_err'.format(var)],
+                df['{}_diff'.format(var)] - df['{}_diff_err'.format(var)],
+                facecolor='red',
+                alpha=0.3,
+            )
 
         # Decorate
         # ax2.set_xticklabels([
@@ -205,15 +222,27 @@ class PlotPull():
             transparent=True,
         )
 
-    def _calc_diff_metrics(self, df, err_df, var):
-        ''' Calculate cut metrics '''
-        # Normalised difference
+    def _calc_diff_metrics(self, df, var, normed=False):
+        ''' Calculate cut metrics
+        Input:
+            Dataframe of two distributions and their errors
+        Output:
+            Dataframe of asymmetry (a - b) / (a + b) - c
+            where c is the adjustment constant to account for a and b
+            not being normalised
+        '''
+        # Normalised asymmetry
         num = df['{}_nocut'.format(var)] - df['{}_cut'.format(var)]
         den = df['{}_nocut'.format(var)] + df['{}_cut'.format(var)]
         df['{}_diff'.format(var)] = num / den
-        df['{}_diff'.format(var)] = df['{}_diff'.format(var)]
 
-        # Now need to propagate error
+        # Now subtract adjustment due to a and b not being normalised
+        if not normed:
+            adj = df['{}_cut'.format(var)].sum() / df['{}_nocut'.format(var)].sum()
+            adj = ((1 - adj) / (1 + adj))
+            print(adj)
+            df['{}_diff'.format(var)] = df['{}_diff'.format(var)] - adj
+        # Now need to propagate error (wrong)
         # First get error for numerator and denominator (same, quadrature)
         # df['{}_diff_err'.format(var)] = np.sqrt(
         #     df['{}_nocut_err'.format(var)]**2 + df['{}_cut_err'.format(var)]**2
@@ -223,20 +252,22 @@ class PlotPull():
         #     (df['{}_diff_err'.format(var)] / num)**2 +
         #     (df['{}_diff_err'.format(var)] / den)**2
         # )
-        err_df['{}_diff'.format(var)] = self._calc_variance(
+        df['{}_diff_err'.format(var)] = self._calc_variance(
             df['{}_nocut'.format(var)],
-            err_df['{}_nocut'.format(var)],
+            df['{}_nocut_err'.format(var)],
             df['{}_cut'.format(var)],
-            err_df['{}_cut'.format(var)],
+            df['{}_cut_err'.format(var)],
         )
 
-        return df, err_df
+        return df
 
     def _calc_variance(self, a, a_err, b, b_err):
         ''' Very specific calculation for standard error
 
-        Input is series of two distributions and their errors
-        Output is series of error of the asymmetry (a - b) / (a + b)
+        Input:
+            Series of two distributions and their errors
+        Output:
+            Series of error of the asymmetry (a - b) / (a + b)
         '''
         asym_err = np.sqrt(
             (
@@ -268,10 +299,14 @@ class PlotPull():
     def _bin_vars(self, df):
         ''' Create bin counts for each variable '''
         for var, bins in zip(self.vars_df['variable'], self.vars_df['bins']):
-            df['{}_bins'.format(var)] = pd.cut(
-                df[var],
-                bins if not np.isnan(bins) else self.default_bins,
-            )
+            if bins == -1:
+                df['{}_bins'.format(var)] = df[var]
+            else:
+                df['{}_bins'.format(var)] = pd.cut(
+                    df[var],
+                    bins if not np.isnan(bins) else self.default_bins,
+                )
+
         return df
 
     def _crop_outliers(self, df):
@@ -327,9 +362,9 @@ if __name__ == '__main__':
     os.makedirs(args.out_dir, exist_ok=True)
 
     # Initialise
-    plot_pull = PlotPull(
+    plot_asym = PlotAsymmetry(
         files=args.in_files,
         model=args.model,
         var_file=args.var,
     )
-    plot_pull.plot_threshold(0.5, args.out_dir)
+    plot_asym.plot_threshold(0.5, args.out_dir)

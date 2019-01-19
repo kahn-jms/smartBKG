@@ -2,3 +2,4 @@
 # -*- coding: utf-8 -*-
 
 from .plot_pull import PlotPull
+from .plot_asymmetry import PlotAsymmetry

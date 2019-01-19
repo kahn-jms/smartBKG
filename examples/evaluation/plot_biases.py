@@ -6,7 +6,8 @@
 
 import argparse
 import os
-from smartBKG.evaluate import PlotPull  # type:ignore
+# from smartBKG.evaluate import PlotPull  # type:ignore
+from smartBKG.evaluate import PlotAsymmetry  # type:ignore
 
 
 def GetCmdArgs():
@@ -41,10 +42,15 @@ if __name__ == '__main__':
     os.makedirs(args.out_dir, exist_ok=True)
 
     # Initialise
-    plot_pull = PlotPull(
+    plot_asym = PlotAsymmetry(
         files=args.in_files,
         model=args.model,
         var_file=args.var,
     )
+
+    # Custom cut
+    plot_asym.df = plot_asym.df.query('nCleanedTracks__bodr__st2__spand__spabs__bodz__bc__st4__bc <= 12')
+    # plot_asym.df = plot_asym.df.query('isSignal == 1')
+
     for t in args.thresholds:
-        plot_pull.plot_threshold(t, args.out_dir)
+        plot_asym.plot_threshold(t, args.out_dir)
