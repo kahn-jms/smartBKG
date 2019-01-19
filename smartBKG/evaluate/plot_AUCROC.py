@@ -70,10 +70,19 @@ class PlotAUCROC():
                 models[pred_col]['thresholds'],
             ) = metrics.roc_curve(df[y_true], df[pred_col])
 
+            (
+                models[pred_col]['precision'],
+                models[pred_col]['recall'],
+                models[pred_col]['pr-thresholds'],
+            ) = metrics.precision_recall_curve(df[y_true], df[pred_col])
+            models[pred_col]['ap'] = metrics.average_precision_score(df[y_true], df[pred_col])
+            print('AP:', models[pred_col]['ap'])
+
             # Plot the single model ROC, don't need this
             # self._plot_single_model(pred_col, fpr, tpr, roc_auc, out_dir)
 
         self._plot_model_ROCs(models, out_dir)
+        # self._plot_model_prec-rec(models, out_dir)
 
     def _plot_model_ROCs(self, models_dict, out_dir):
         ''' Plot ROC of given models together '''
@@ -83,13 +92,22 @@ class PlotAUCROC():
 
         for model in models_dict.keys():
             print('model:', model)
-            plt.plot(
+            ax = plt.plot(
                 models_dict[model]['fpr'],
                 models_dict[model]['tpr'],
                 'b',
                 # label='{} = {:.2f}'.format(model, models_dict[model]['auc'])
                 label='AUC = {:.3f}'.format(models_dict[model]['auc']),
                 linewidth=1,
+            )
+            plt.plot(
+                models_dict[model]['recall'],
+                models_dict[model]['precision'],
+                'r',
+                # label='{} = {:.2f}'.format(model, models_dict[model]['auc'])
+                # label='AUC = {:.3f}'.format(models_dict[model]['auc']),
+                linewidth=1,
+                # ax=ax,
             )
         plt.legend(loc='best')
         plt.plot([0, 1], [0, 1], 'r--', linewidth=1)

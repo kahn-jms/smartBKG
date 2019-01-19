@@ -27,6 +27,9 @@ def GetCmdArgs():
     return parser.parse_args()
 
 
+particle_list = 'B+:generic'
+# particle_list = 'B0:generic'
+
 B_vars = [
     # Event wide vars
     'evtNum',
@@ -94,9 +97,6 @@ ROE_vars = [
     'CleoConeCS(9, ROE)',
 ]
 
-particle_list = 'B+:generic'
-# particle_list = 'B0:generic'
-
 # Rest of event filters
 IPtrack_cut = 'dr < 2 and abs(dz) < 4'  # From stdCharged
 gamma_cut = (
@@ -130,6 +130,13 @@ if __name__ == '__main__':
 
     B_vars += ROE_vars
     print(B_vars)
+
+    # Then choose one candidate per event
+    # Dont' need to, want to view changes to candidates overall
+    # But let's try for fun
+    ma.rankByHighest(particle_list, 'extraInfo(SignalProbability)',
+                     outputVariable='FEIProbabilityRank', path=path)
+    ma.applyCuts(particle_list, 'extraInfo(FEIProbabilityRank) == 1', path=path)
 
     # Write output
     ma.variablesToNtuple(

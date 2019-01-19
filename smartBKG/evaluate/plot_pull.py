@@ -68,6 +68,10 @@ class PlotPull():
 
     def _plot_metrics(self, df, var, threshold, out_dir, pre, post):
         ''' Plot metrics '''
+        # As a first step need to create a label column from the index
+        df = df.reset_index()
+        df['labels'] = df['index'].apply(lambda x: x.mid).astype(float)
+
         plt.figure(
             figsize=(6, 5),
             linewidth=1,
@@ -75,36 +79,38 @@ class PlotPull():
         # First draw variable
         # ax1 = plt.subplot(411, nrows=3)
         ax1 = plt.subplot2grid((4, 1), (0, 0), rowspan=3)
-        df[[
-            '{}_nocut'.format(var),
-            '{}_cut'.format(var),
-        ]].plot(
-            kind='line',
+        df.plot(
+            x='labels',
+            y=[
+                '{}_nocut'.format(var),
+                '{}_cut'.format(var),
+            ],
+            # kind='line',
             # bins=30,
             grid=True,
             stacked=False,
-            alpha=0.5,
-            # yerr=df[[
-            #     '{}_nocut_err'.format(var),
-            #     '{}_cut_err'.format(var),
-            # ]].values.T,
+            alpha=0.9,
             ax=ax1,
             xlim=(
                 self.vars_df.loc[self.vars_df['variable'] == var]['low_x'].values[0],
                 self.vars_df.loc[self.vars_df['variable'] == var]['high_x'].values[0],
             ) if not np.isnan(self.vars_df.loc[self.vars_df['variable'] == var]['low_x'].values[0])
             else None,
+            # yerr=df[[
+            #     '{}_nocut_err'.format(var),
+            #     '{}_cut_err'.format(var),
+            # ]].values.T,
         )
         # Draw error bands
         ax1.fill_between(
-            range(len(df.index)),
+            df['labels'],
             df['{}_nocut'.format(var)] + df['{}_nocut_err'.format(var)],
             df['{}_nocut'.format(var)] - df['{}_nocut_err'.format(var)],
             facecolor='blue',
             alpha=0.3,
         )
         ax1.fill_between(
-            range(len(df.index)),
+            df['labels'],
             df['{}_cut'.format(var)] + df['{}_cut_err'.format(var)],
             df['{}_cut'.format(var)] - df['{}_cut_err'.format(var)],
             facecolor='orange',
@@ -118,11 +124,14 @@ class PlotPull():
 
         # Draw the normed difference
         # ax2 = plt.subplot(414, sharex=ax1)
-        ax2 = plt.subplot2grid((4, 1), (3, 0), rowspan=1)
-        df['{}_diff'.format(var)].plot(
+        ax2 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, sharex=ax1)
+        df.plot(
+            x='labels',
+            y='{}_diff'.format(var),
             grid=True,
             # sharex=True,
             color='red',
+            alpha=0.9,
             ax=ax2,
             xlim=(
                 self.vars_df.loc[self.vars_df['variable'] == var]['low_x'].values[0],
@@ -131,15 +140,18 @@ class PlotPull():
                 self.vars_df.loc[self.vars_df['variable'] == var]['low_x'].values[0]
             )
             else None,
-            ylim=(-1, 1),
+            # ylim=(-1, 1),
             # ylim=(
             #     df['{}_diff'.format(var)].min(),
             #     df['{}_diff'.format(var)].max()
             # ),
+            # yerr=df[[
+            #     '{}_diff_err'.format(var),
+            # ]].values.T,
         )
         # Draw error bands
         ax2.fill_between(
-            range(len(df.index)),
+            df['labels'],
             df['{}_diff'.format(var)] + df['{}_diff_err'.format(var)],
             df['{}_diff'.format(var)] - df['{}_diff_err'.format(var)],
             facecolor='red',
@@ -147,14 +159,16 @@ class PlotPull():
         )
 
         # Decorate
-        ax2.set_xticklabels([
-            '{:.4f}'.format(c.mid) for c in df.index.values.categories
-        ])
+        # ax2.set_xticklabels([
+        #     '{:.4f}'.format(c.mid) for c in df.index.values.categories
+        #     # '{:d}'.format(int(c.left)) for c in df.index.values.categories  # For discrete vars
+        # ])
         plt.xlabel(
             self.vars_df.loc[self.vars_df['variable'] == var]['title'].values[0]
         )
         ax1.set(ylabel='No. events (normalised)')
         ax2.set(ylabel='Asymmetry')
+        ax2.get_legend().remove()
         # Use log axes if necessary
         if self.vars_df.loc[
             self.vars_df['variable'] == var
@@ -204,10 +218,10 @@ class PlotPull():
         '''
         asym_err = np.sqrt(
             (
-                (2. * b) / (a + b)**2
-            )**2 * a_err + (
-                (-2. * a) / (a + b)**2
-            )**2 * b_err
+                ((2. * b) / (a + b)**2)**2 * a_err**2
+            ) + (
+                ((-2. * a) / (a + b)**2)**2 * b_err**2
+            )
         )
 
         return asym_err
