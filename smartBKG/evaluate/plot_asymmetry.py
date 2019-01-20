@@ -84,6 +84,7 @@ class PlotAsymmetry():
                 (df * df.sum())
             )
         )
+        # norm_err_df = err_df / df.sum()
 
         # return pd.concat([df, err_df], axis=1)
         return pd.concat([norm_df, norm_err_df.add_suffix('_err')], axis=1)
