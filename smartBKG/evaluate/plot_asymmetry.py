@@ -48,7 +48,6 @@ class PlotAsymmetry():
             cut_df = self._add_stat_err(cut_df)
             # comb_df = self._norm_df(cut_df, err_df)
             cut_df = self._calc_diff_metrics(cut_df, var)
-            print(cut_df.head())
             self._plot_metrics(
                 cut_df,
                 var,
@@ -240,7 +239,6 @@ class PlotAsymmetry():
         if not normed:
             adj = df['{}_cut'.format(var)].sum() / df['{}_nocut'.format(var)].sum()
             adj = ((1 - adj) / (1 + adj))
-            print(adj)
             df['{}_diff'.format(var)] = df['{}_diff'.format(var)] - adj
         # Now need to propagate error (wrong)
         # First get error for numerator and denominator (same, quadrature)
@@ -275,6 +273,15 @@ class PlotAsymmetry():
             ) + (
                 ((-2. * a) / (a + b)**2)**2 * b_err**2
             )
+        )
+        # Need to account for the constant subtracted
+        tot_a = a.sum()
+        tot_b = b.sum()
+        const_err = 2 * np.sqrt(
+            (tot_a * tot_b) / (np.power(tot_a + tot_b, 3))
+        )
+        asym_err = np.sqrt(
+            np.power(asym_err, 2) + np.power(const_err, 2)
         )
 
         return asym_err
