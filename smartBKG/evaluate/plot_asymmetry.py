@@ -48,7 +48,6 @@ class PlotAsymmetry():
             err_df = self._calc_err(cut_df)
             comb_df = self._norm_df(cut_df, err_df)
             comb_df = self._calc_diff_metrics(comb_df, var)
-            print(comb_df.head())
             self._plot_metrics(
                 comb_df,
                 var,
@@ -261,7 +260,6 @@ class PlotAsymmetry():
             np.power(b_err, 2) -
             2. * corr * a_err * b_err
         )
-        print(h_err)
         # And for g = a + b (difference is the plus)
         g = a + b
         g_err = np.sqrt(
