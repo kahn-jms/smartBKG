@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     # Custom cut
     plot_asym.df = plot_asym.df.query('nCleanedTracks__bodr__st2__spand__spabs__bodz__bc__st4__bc <= 12')
-    # plot_asym.df = plot_asym.df.query('isSignal == 1')
+    plot_asym.df = plot_asym.df.query('isSignal == 1')
 
     for t in args.thresholds:
         plot_asym.plot_threshold(t, args.out_dir)

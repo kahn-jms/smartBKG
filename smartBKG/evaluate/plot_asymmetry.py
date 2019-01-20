@@ -45,11 +45,12 @@ class PlotAsymmetry():
             cut_df, pre_evts, post_evts = self._create_var_counts(self.df, var, threshold)
             # Could move this call into create_var_counts or move create_var_counts
             # call into calc_diff_metrics is better
-            cut_df = self._add_stat_err(cut_df)
-            # comb_df = self._norm_df(cut_df, err_df)
-            cut_df = self._calc_diff_metrics(cut_df, var)
+            err_df = self._calc_err(cut_df)
+            comb_df = self._norm_df(cut_df, err_df)
+            comb_df = self._calc_diff_metrics(comb_df, var)
+            print(comb_df.head())
             self._plot_metrics(
-                cut_df,
+                comb_df,
                 var,
                 threshold,
                 out_dir,
@@ -57,22 +58,35 @@ class PlotAsymmetry():
                 post=post_evts,
             )
 
-    def _add_stat_err(self, df):
+    def _calc_err(self, df):
         ''' Calcualte statistical uncertainty '''
         err_df = np.sqrt(df)
-        return pd.concat([df, err_df.add_suffix('_err')], axis=1)
+        # return pd.concat([df, err_df.add_suffix('_err')], axis=1)
+        return err_df
 
-    # def _norm_df(self, df, err_df):
-    #     ''' Normalise df, taking care of errors '''
-    #     # Normalise
-    #     # err_df = df.filter(regex=('.*_err'))
-    #     err_df = err_df / (df.max() - df.min())
+    def _norm_df(self, df, err_df):
+        ''' Normalise df, taking care of errors '''
+        # Normalise
+        # non_err_df = df.select(lambda col: not col.endswith('_err'), axis=1)
+        norm_df = df / df.sum()
 
-    #     # non_err_df = df.select(lambda col: not col.endswith('_err'), axis=1)
-    #     df = (df - df.min()) / (df.max() - df.min())
+        # And handle the errors
+        # Could do this in one step but it's more modular this way
+        # One step is err = df * sqrt((df.sum + df - 2) / (df * df.sum))
+        # err_df = df.filter(regex=('.*_err'))
+        # Assume 0% corellation between df and df.sum
+        corr = 1.
+        norm_err_df = norm_df * np.sqrt(
+            np.power(err_df / df, 2) +
+            np.power(np.sqrt(df.sum()) / df.sum(), 2) -
+            (
+                (2. * corr * err_df * np.sqrt(df.sum())) /
+                (df * df.sum())
+            )
+        )
 
-    #     # return pd.concat([df, err_df], axis=1)
-    #     return pd.concat([df, err_df.add_suffix('_err')], axis=1)
+        # return pd.concat([df, err_df], axis=1)
+        return pd.concat([norm_df, norm_err_df.add_suffix('_err')], axis=1)
 
     def _plot_metrics(self, df, var, threshold, out_dir, pre, post):
         ''' Plot metrics '''
@@ -221,70 +235,53 @@ class PlotAsymmetry():
             transparent=True,
         )
 
-    def _calc_diff_metrics(self, df, var, normed=False):
+    def _calc_diff_metrics(self, df, var):
         ''' Calculate cut metrics
-        Input:
-            Dataframe of two distributions and their errors
-        Output:
-            Dataframe of asymmetry (a - b) / (a + b) - c
-            where c is the adjustment constant to account for a and b
-            not being normalised
-        '''
-        # Normalised asymmetry
-        num = df['{}_nocut'.format(var)] - df['{}_cut'.format(var)]
-        den = df['{}_nocut'.format(var)] + df['{}_cut'.format(var)]
-        df['{}_diff'.format(var)] = num / den
 
-        # Now subtract adjustment due to a and b not being normalised
-        if not normed:
-            adj = df['{}_cut'.format(var)].sum() / df['{}_nocut'.format(var)].sum()
-            adj = ((1 - adj) / (1 + adj))
-            df['{}_diff'.format(var)] = df['{}_diff'.format(var)] - adj
-        # Now need to propagate error (wrong)
-        # First get error for numerator and denominator (same, quadrature)
-        # df['{}_diff_err'.format(var)] = np.sqrt(
-        #     df['{}_nocut_err'.format(var)]**2 + df['{}_cut_err'.format(var)]**2
-        # )
-        # # Then handle the division
-        # df['{}_diff_err'.format(var)] = np.abs(df['{}_diff'.format(var)]) * np.sqrt(
-        #     (df['{}_diff_err'.format(var)] / num)**2 +
-        #     (df['{}_diff_err'.format(var)] / den)**2
-        # )
-        df['{}_diff_err'.format(var)] = self._calc_variance(
-            df['{}_nocut'.format(var)],
-            df['{}_nocut_err'.format(var)],
-            df['{}_cut'.format(var)],
-            df['{}_cut_err'.format(var)],
+        I've assumed 100% correlation between the variable and itself
+        after the NN threshold cut.
+        This is true if the NN output is uncorrelated with the variable,
+        if not the covariance should be calculated and added in to increase
+        the uncert.
+        I'll add this later, for now can try with 0 and 100% correlation
+        assumptions to test boundaries.
+        If 0% works then you're good.
+        '''
+        a = df['{}_nocut'.format(var)]
+        b = df['{}_cut'.format(var)]
+        a_err = df['{}_nocut_err'.format(var)]
+        b_err = df['{}_cut_err'.format(var)]
+        corr = a.corr(b)
+
+        # First for h = a - b
+        h = a - b
+        h_err = np.sqrt(
+            np.power(a_err, 2) +
+            np.power(b_err, 2) -
+            2. * corr * a_err * b_err
         )
+        print(h_err)
+        # And for g = a + b (difference is the plus)
+        g = a + b
+        g_err = np.sqrt(
+            np.power(a_err, 2) +
+            np.power(b_err, 2) +
+            2 * corr * a_err * b_err
+        )
+        # And now total
+        corr = h.corr(g)
+        asym = h / g
+        asym_err = np.abs(asym) * np.sqrt(
+            np.power(h_err / h, 2) +
+            np.power(g_err / g, 2) -
+            ((2 * corr * h_err * g_err) / (h * g))
+        )
+
+        # Put back into original df
+        df['{}_diff'.format(var)] = asym
+        df['{}_diff_err'.format(var)] = asym_err
 
         return df
-
-    def _calc_variance(self, a, a_err, b, b_err):
-        ''' Very specific calculation for standard error
-
-        Input:
-            Series of two distributions and their errors
-        Output:
-            Series of error of the asymmetry (a - b) / (a + b)
-        '''
-        asym_err = np.sqrt(
-            (
-                ((2. * b) / (a + b)**2)**2 * a_err**2
-            ) + (
-                ((-2. * a) / (a + b)**2)**2 * b_err**2
-            )
-        )
-        # Need to account for the constant subtracted
-        tot_a = a.sum()
-        tot_b = b.sum()
-        const_err = 2 * np.sqrt(
-            (tot_a * tot_b) / (np.power(tot_a + tot_b, 3))
-        )
-        asym_err = np.sqrt(
-            np.power(asym_err, 2) + np.power(const_err, 2)
-        )
-
-        return asym_err
 
     def _create_var_counts(self, df, var, threshold):
         ''' Create df with bin counts before and after threshold cut '''
