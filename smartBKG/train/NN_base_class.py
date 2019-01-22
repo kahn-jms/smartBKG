@@ -120,11 +120,11 @@ class NNBaseClass():
             )
 
         # Final layer in node needs to have same shape as input to do Add
-        # layer = self._conv1D_node(
-        #     layer,
-        #     filters=input_filters,
-        #     kernel_size=kernels,
-        # )
+        layer = self._conv1D_node(
+            layer,
+            filters=input_filters,
+            kernel_size=kernels,
+        )
         layer = Conv1D(
             filters=input_filters,
             kernel_size=kernels,
@@ -135,7 +135,54 @@ class NNBaseClass():
         )(layer)
 
         layer = Add()([layer, input_layer])
+        # layer = LeakyReLU()(layer)
+        if pool == 'avg':
+            layer = AveragePooling1D(pool_size=2)(layer)
+        elif pool == 'max':
+            layer = MaxPooling1D(pool_size=2)(layer)
+
+        return layer
+
+    def _resnet_preact_node(
+        self,
+        input_layer,
+        n_layers=2,
+        kernels=3,
+        filters=32,
+        pool=None,
+    ):
+        ''' Builds a standard resnet block including identity hop '''
+        input_filters = int(input_layer.shape[-1])
+
+        layer = input_layer
+        for i in range(n_layers - 1):
+            layer = BatchNormalization()(layer)
+            layer = LeakyReLU()(layer)
+            layer = Conv1D(
+                filters=filters,
+                kernel_size=kernels,
+                padding='same',
+                use_bias=False,
+                # kernel_initializer='he_normal',
+                # kernel_regularizer=l1_l2(l1=0.001, l2=0.05),
+                # **kwargs,
+            )(layer)
+
+        # Final layer in node needs to have same shape as input to do Add
+        layer = BatchNormalization()(layer)
         layer = LeakyReLU()(layer)
+        layer = Conv1D(
+            filters=input_filters,
+            kernel_size=kernels,
+            padding='same',
+            use_bias=False,
+            # kernel_initializer='he_normal',
+            # kernel_regularizer=l1_l2(l1=0.001, l2=0.05),
+            # **kwargs,
+        )(layer)
+
+        layer = Add()([layer, input_layer])
+        # layer = LeakyReLU()(layer)
         if pool == 'avg':
             layer = AveragePooling1D(pool_size=2)(layer)
         elif pool == 'max':

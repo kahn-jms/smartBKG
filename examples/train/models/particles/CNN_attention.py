@@ -12,7 +12,7 @@ from keras.layers import LeakyReLU
 from keras.layers import Conv1D, GlobalAveragePooling1D, MaxPooling1D, AveragePooling1D
 from keras.layers import Embedding
 from keras.layers import BatchNormalization
-from keras.layers import concatenate, Add
+from keras.layers import concatenate, Add, Flatten
 from keras import optimizers
 from keras_self_attention import SeqSelfAttention
 
@@ -55,15 +55,45 @@ class NN_model(NNBaseClass):
         # Put all the particle
         particle_l = concatenate([particle_input, pdg_l, mother_pdg_l], axis=-1)
 
-        particle_l = self._conv1D_node(particle_l, filters=128, kernel_size=1)
-        particle_l = self._conv1D_node(particle_l, filters=128, kernel_size=1)
+        # particle_l = self._conv1D_node(particle_l, filters=128, kernel_size=1)
+        # particle_l = self._resnet_node(particle_l, kernels=1, filters=128)
+        # particle_l = self._resnet_node(particle_l, kernels=1, filters=128)
+        # particle_l = self._resnet_node(particle_l, kernels=1, filters=128)
+        # particle_l = self._resnet_node(particle_l, kernels=1, filters=128)
+        # particle_l = self._resnet_node(particle_l, kernels=1, filters=128)
+        # particle_l = self._conv1D_node(particle_l, filters=1, kernel_size=1)
 
         # Attention
-        particle_l = SeqSelfAttention()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
+        particle_l = SeqSelfAttention(units=32)(particle_l)
+        particle_l = BatchNormalization()(particle_l)
 
         # Block 1
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
-        particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
+        # particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
+        # particle_l = self._resnet_node(particle_l, kernels=3, filters=128)
         # particle_l = self._resnet_node(particle_l, kernels=3, filters=128, pool='avg')
 
         # Block 2
@@ -90,6 +120,7 @@ class NN_model(NNBaseClass):
 
         # Flatten (not really)
         particle_output = GlobalAveragePooling1D()(particle_l)
+        # particle_output = Flatten()(particle_l)
 
         # particle_l = Dense(32, kernel_initializer='uniform')(particle_l)
         # particle_l = BatchNormalization()(particle_l)
@@ -98,11 +129,13 @@ class NN_model(NNBaseClass):
 
         # Finally, combine the two networks
         # comb_l = concatenate([decay_output, particle_output], axis=-1)
-        comb_l = Dense(512)(particle_output)
+        comb_l = Dense(128)(particle_output)
+        comb_l = LeakyReLU()(comb_l)
+        comb_l = Dense(128)(comb_l)
         comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.5)(comb_l)
-        comb_l = Dense(128, activation='softmax')(comb_l)
-        # comb_l = LeakyReLU()(comb_l)
+        comb_l = Dense(64)(comb_l)
+        comb_l = LeakyReLU()(comb_l)
         # comb_l = Dropout(0.4)(comb_l)
         # comb_l = Dense(256)(comb_l)
         # comb_l = LeakyReLU()(comb_l)
