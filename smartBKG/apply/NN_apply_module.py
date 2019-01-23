@@ -81,8 +81,8 @@ class NNApplyModule(b2.Module):
             # And if needed infer the name of the extra info var
             if self.extra_info_var is None:
                 self.extra_info_var = self.model.name
-                print('EventExtraInfo variable set to: {}'.format(self.extra_info_var))
-            print('Initialised model')
+                b2.B2INFO('EventExtraInfo variable set to: {}'.format(self.extra_info_var))
+            b2.B2INFO('Initialised model')
 
         # Need to create the eventExtraInfo entry for each event
         if self.extra_info_var:
@@ -144,8 +144,9 @@ class NNApplyModule(b2.Module):
         # Outputs pass probability
         pred = self.model.predict(data_dict)
 
-        b2.B2INFO('Pass probability:\t{}'.format(pred[0][0]))
-        b2.B2INFO('Passes threshold:\t{}'.format(int(pred[0][0] >= self.threshold)))
+        # Need to set this to some debug mode
+        # b2.B2INFO('Pass probability:\t{}'.format(pred[0][0]))
+        # b2.B2INFO('Passes threshold:\t{}'.format(int(pred[0][0] >= self.threshold)))
 
         # Save the pass probability to EventExtraInfo
         if self.extra_info_var:
