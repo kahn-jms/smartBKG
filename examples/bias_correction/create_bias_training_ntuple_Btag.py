@@ -31,7 +31,8 @@ def GetCmdArgs():
 particle_list = 'B+:generic'
 # particle_list = 'B0:generic'
 
-# Should alias this
+# ROE filters
+IPtrack_cut = 'dr < 2 and abs(dz) < 4'  # From stdCharged
 gamma_cut = (
     'clusterHypothesis == 5'
     ' and theta > 0.296706 and theta < 2.61799'
@@ -40,35 +41,68 @@ gamma_cut = (
     ' and [[clusterReg == 1 and E > 0.05] or [clusterReg == 2 and E > 0.05] or [clusterReg == 3 and E > 0.075]]'
     ' and abs(clusterTiming) < formula(0.5 * clusterErrorTiming)'
 )
+
 # Need to be event level vars as the smartBKG NN cut throws away events only
-event_vars = [
+B_vars = [
     'evtNum',
     'nTracks',
     'nCleanedTracks(dr<2 and abs(dz)<4)',
-    'nCleanedECLClusters({})'.format(gamma_cut),
-    'Ecms',
-    'Eher',
-    'Eler',
-    # 'missingEnergy',
-    # 'missingEnergyOfEventCMS',
-    # 'missingMomentumOfEvent',
-    # 'missingMomentumOfEvent_Px',
-    # 'missingMomentumOfEvent_Py',
-    # 'missingMomentumOfEvent_Pz',
-    # 'missingMomentumOfEvent_theta',
-    # 'missingMomentumOfEventCMS',
-    # 'missingMomentumOfEventCMS_Px',
-    # 'missingMomentumOfEventCMS_Py',
-    # 'missingMomentumOfEventCMS_Pz',
-    # 'missingMomentumOfEventCMS_theta',
-    # 'totalPhotonsEnergyOfEvent',
-    # 'visibleEnergyOfEventCMS',
     'nECLClusters',
     'nKLMClusters',
     # 'R2EventLevel',
+    'isSignal',
+    'charge',
+    'Mbc',
+    'deltaE',
+    # 'missingMass',
+    'M',
+    'useCMSFrame(p)',
+    'extraInfo(SignalProbability)',
+    'extraInfo(FEIProbabilityRank)',
     # Training labels
     'eventExtraInfo(smartBKG)',
 ]
+
+ROE_vars = [
+    # ROE mask vars
+    'ROE_E(ROE)',
+    'ROE_eextra(ROE)',
+    'ROE_neextra(ROE)',
+    'WE_MissP(ROE, 0)',
+    'WE_MissE(ROE, 0)',
+    # Continuum suppression
+    'R2',
+    'thrustBm',
+    'thrustOm',
+    'cosTBTO',
+    'cosTBz',
+    'KSFWVariables(et)',
+    'KSFWVariables(mm2)',
+    'KSFWVariables(hso00)',
+    'KSFWVariables(hso02)',
+    'KSFWVariables(hso04)',
+    'KSFWVariables(hso10)',
+    'KSFWVariables(hso12)',
+    'KSFWVariables(hso14)',
+    'KSFWVariables(hso20)',
+    'KSFWVariables(hso22)',
+    'KSFWVariables(hso24)',
+    'KSFWVariables(hoo0)',
+    'KSFWVariables(hoo1)',
+    'KSFWVariables(hoo2)',
+    'KSFWVariables(hoo3)',
+    'KSFWVariables(hoo4)',
+    'CleoConeCS(1, ROE)',
+    'CleoConeCS(2, ROE)',
+    'CleoConeCS(3, ROE)',
+    'CleoConeCS(4, ROE)',
+    'CleoConeCS(5, ROE)',
+    'CleoConeCS(6, ROE)',
+    'CleoConeCS(7, ROE)',
+    'CleoConeCS(8, ROE)',
+    'CleoConeCS(9, ROE)',
+]
+B_vars += ROE_vars
 
 
 if __name__ == '__main__':
@@ -81,7 +115,13 @@ if __name__ == '__main__':
     ma.inputMdstList('MC9', filelist=[], path=path)
     # ma.inputMdstList('default', filelist=[], path=path)
 
-    print(event_vars)
+    ma.applyCuts(particle_list, 'nCleanedTracks(dr<2 and abs(dz)<4) <= 12', path=path)
+
+    # Build some event specific ROE and continuum vars
+    ma.buildRestOfEvent(particle_list, path=path)
+    ROEMask = ('ROE', IPtrack_cut, gamma_cut)
+    ma.appendROEMasks(particle_list, [ROEMask], path=path)
+    ma.buildContinuumSuppression(particle_list, roe_mask='ROE', path=path)
 
     # Apply the smartBKG NN model
     # Will use extraInfo saved as training labels later,
@@ -99,11 +139,20 @@ if __name__ == '__main__':
 
     path.add_module(NNApplyModule_m)
 
+    # We'll keep just one Btag per event and train on that
+    ma.rankByHighest(
+        particle_list,
+        'extraInfo(SignalProbability)',
+        outputVariable='FEIProbabilityRank',
+        numBest=1,
+        path=path
+    )
+
     # Write output
     # ma.variablesToNTuple(
     ma.variablesToNtuple(
-        decayString='',
-        variables=event_vars,
+        decayString=particle_list,
+        variables=B_vars,
         filename=args.out_file,
         path=path,
     )

@@ -21,7 +21,7 @@ import modularAnalysis as ma  # noqa
 import basf2 as b2  # noqa
 
 # Custom functions
-from NN_apply_module import NNApplyModule  # noqa
+from smartBKG.apply import NNApplyModule  # noqa
 
 
 # Read settings/inputs for module params

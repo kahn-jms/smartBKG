@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # Plot binomial distribution of threshold for Ntuple variables
-# James Kahn 2018
+# James Kahn 2019
 
+from scipy.stats import binom
+import pandas as pd
 import os
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.stats import binom
 from .make_root_compatible import makeRootCompatible
 
 from ROOT import PyConfig
@@ -20,7 +20,7 @@ import root_pandas  # noqa
 class PlotBinomial():
     ''' Class to load Ntuple and plot pulls for threshold cut '''
     def __init__(self, files, var_file, model=None, tree='variables'):
-        self.files = files
+        self.files = files  # Should assert this is a list, or convert
         self.model = model
         self.var_file = var_file
         self.tree = tree
@@ -36,7 +36,10 @@ class PlotBinomial():
 
         self.vars_df = self._load_var_csv(self.var_file)
 
-        self.df = self._load_ntuples(self.files, self.tree)
+        if self.files[0].endswith('.root'):
+            self.df = self._load_ntuples(self.files, self.tree)
+        elif self.files[0].endswith('.h5'):
+            self.df = self._load_hdf(self.files, self.tree)
         # self.df = self._crop_outliers(self.df)
         # Could put this in plot function, then can apply plotting
         # range restriction (query) there
@@ -146,8 +149,8 @@ class PlotBinomial():
             #     alpha=0.3,
             # )
         ax1.legend([
-            'Expected (binomial)',
-            'Observed (NN prediction > {:.2f})'.format(threshold)
+            'Expected (binomial) [{}]'.format(pre),
+            'Observed (NN prediction > {:.2f}) [{:d}]'.format(threshold, int(post))
             # 'Without cut ({:d})'.format(pre),
             # 'NN prediction > {:.2f} ({:d})'.format(threshold, post)
         ])
@@ -249,6 +252,13 @@ class PlotBinomial():
                 (df[var] > outliers.loc[low_quant])
             ]
         return df
+
+    def _load_hdf(self, files, key='s'):
+        ''' Load ntuples into single dataframe '''
+        df_list = []
+        for f in files:
+            df_list.append(pd.read_hdf(f, key=key))
+        return pd.concat(df_list)
 
     def _load_ntuples(self, ntuples, tree='variable'):
         ''' Load ntuples into single dataframe '''

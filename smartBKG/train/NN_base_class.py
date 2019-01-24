@@ -80,7 +80,7 @@ class NNBaseClass():
         filters=64,
         kernel_size=3,
         pool=None,
-        **kwargs,
+        **kwargs
     ):
         ''' Collective convolutional node '''
         particle_l = input_l
@@ -89,7 +89,7 @@ class NNBaseClass():
                 particle_l,
                 filters=filters,
                 kernel_size=kernel_size,
-                **kwargs,
+                **kwargs
             )
         # Compress
         if pool == 'max':

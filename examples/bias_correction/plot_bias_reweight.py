@@ -8,7 +8,7 @@ import argparse
 import os
 # from smartBKG.evaluate import PlotPull  # type:ignore
 # from smartBKG.evaluate import PlotAsymmetry  # type:ignore
-from smartBKG.evaluate import PlotBinomial  # type:ignore
+from smartBKG.evaluate import PlotBinomReweight  # type:ignore
 
 
 def GetCmdArgs():
@@ -17,15 +17,15 @@ def GetCmdArgs():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument('-i', type=str, required=True, nargs='+',
-                        help="Path to Ntuples to plot", metavar="NTUPLES",
+                        help="Path to events to plot", metavar="NTUPLES",
                         dest='in_files')
     parser.add_argument('-m', type=str, required=False,
                         help="Model to plot", metavar="MODEL",
                         dest='model')
-    parser.add_argument('-t', type=float, required=False, nargs='+',
-                        default=[x * 0.1 for x in range(10)],
-                        help="Thresholds to apply", metavar="THRESHOLDS",
-                        dest='thresholds')
+    parser.add_argument('-t', type=float, required=False,
+                        default=0.5,
+                        help="Threshold to apply", metavar="THRESHOLD",
+                        dest='threshold')
     parser.add_argument('-v', type=str, required=True,
                         help="""
                         Variables file to plot (CSV).
@@ -43,18 +43,16 @@ if __name__ == '__main__':
     os.makedirs(args.out_dir, exist_ok=True)
 
     # Initialise
-    plot_binom = PlotBinomial(
+    plot_binom = PlotBinomReweight(
         files=args.in_files,
         model=args.model,
         var_file=args.var,
-        # tree='s',
+        tree='s',
     )
 
     # Custom cut
     plot_binom.df = plot_binom.df.query('nCleanedTracks__bodr__st2__spand__spabs__bodz__bc__st4__bc <= 12')
-    # plot_binom.df = plot_binom.df.query('ROE_E__boROE__bc <= 13')
     # plot_binom.df = plot_binom.df.query('biasNN_pred <= 0.4')
     # plot_asym.df = plot_asym.df.query('isSignal == 1')
 
-    for t in args.thresholds:
-        plot_binom.plot_threshold(t, args.out_dir)
+    plot_binom.plot_threshold(args.threshold, args.out_dir)
