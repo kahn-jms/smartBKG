@@ -110,7 +110,6 @@ class NN_model(NNBaseClass):
             # Args for expanded block
             kernels=[1, 3, 1],
             filters=4,
-            dropout=0,
         )
 
         # Here allow input from before ResNeXt block too
@@ -126,8 +125,7 @@ class NN_model(NNBaseClass):
             grouped_channels=int(initial_filters / self.cardinality),
             # Args for expanded block
             kernels=[1, 3, 1],
-            filters=4,
-            dropout=0,
+            filters=4
         )
 
         # Here allow input from before ResNeXt block too
@@ -189,7 +187,7 @@ class NN_model(NNBaseClass):
         layer = concatenate(resnext_l, axis=-1)
         return layer
 
-    def _expanded_block(self, layer, output_shape, kernels=[1, 3, 1], filters=4, dropout=0):
+    def _expanded_block(self, layer, output_shape, kernels=[1, 3, 1], filters=4):
         ''' Convenient function to add a single ResNeXt block
 
         Produces conv1D layers with 1, 3, 1 sized kernels
@@ -199,7 +197,6 @@ class NN_model(NNBaseClass):
                 layer,
                 filters=filters,
                 kernel_size=kernel,
-                dropout=dropout,
             )
 
         # Last layer needs to have requested output shape
@@ -207,5 +204,4 @@ class NN_model(NNBaseClass):
             layer,
             filters=output_shape,
             kernel_size=kernels[-1],
-            dropout=dropout,
         )
