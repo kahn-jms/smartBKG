@@ -8,7 +8,7 @@ import os
 import numpy as np
 import keras
 import pandas as pd
-from keras.preprocessing import text
+from tensorflow.keras.preprocessing import text
 from smartBKG import evtPdl  # type:ignore
 
 

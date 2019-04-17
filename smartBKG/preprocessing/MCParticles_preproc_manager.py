@@ -6,7 +6,7 @@
 
 import pandas as pd
 import numpy as np
-from keras.preprocessing import sequence
+from tensorflow.keras.preprocessing import sequence
 from .MCParticles_preproc_pandas import MCParticlesPreprocPandas
 
 
@@ -17,8 +17,8 @@ class MCParticlesPreprocManager():
         self.ppp = MCParticlesPreprocPandas()
 
         self.cont_vars = ['energy', 'prodTime', 'x', 'y', 'z', 'px', 'py', 'pz']
-        # self.cont_min = [0.0, 0.0, -700., -700., -700., -3.0, -3.0, -2.0]
-        # self.cont_max = [11.0, 150.0, 700., 700., 700., 3.0, 3.0, 4.0]
+        self.cont_min = [0.0, 0.0, -700., -700., -700., -3.0, -3.0, -2.0]
+        self.cont_max = [11.0, 150.0, 700., 700., 700., 3.0, 3.0, 4.0]
         # Values obtained automatically from subset of MCParticles
         self.cont_mean = [
             1.26257171404669,
@@ -40,8 +40,8 @@ class MCParticlesPreprocManager():
             0.42181551657083644,
             0.683827892849276]
 
-        # self.cont_min_series = pd.Series(self.cont_min, index=self.cont_vars)
-        # self.cont_max_series = pd.Series(self.cont_max, index=self.cont_vars)
+        self.cont_min_series = pd.Series(self.cont_min, index=self.cont_vars)
+        self.cont_max_series = pd.Series(self.cont_max, index=self.cont_vars)
         self.cont_mean_series = pd.Series(self.cont_mean, index=self.cont_vars)
         self.cont_std_series = pd.Series(self.cont_std, index=self.cont_vars)
 
@@ -69,13 +69,13 @@ class MCParticlesPreprocManager():
     def _preproc_cont_vars(self, df):
         ''' Perform necessary preprocessing of self.cont_vars '''
         # Normalise continuous variables
-        # return (df - self.cont_min_series) / (self.cont_max_series - self.cont_min_series)
+        return (df - self.cont_min_series) / (self.cont_max_series - self.cont_min_series)
         # Simple tanh
         # return df.apply(np.tanh)
         # tanh-estimator
-        return df.apply(
-            lambda x: 0.5 * (np.tanh(0.01 * ((x - self.cont_mean_series[x.name]) / self.cont_std_series[x.name]) + 1))
-        )
+        # return df.apply(
+        #     lambda x: 0.5 * (np.tanh(0.01 * ((x - self.cont_mean_series[x.name]) / self.cont_std_series[x.name]) + 1))
+        # )
 
     def _preproc_disc_vars(self, df):
         ''' Perform necessary preprocessing of self.disc_vars '''

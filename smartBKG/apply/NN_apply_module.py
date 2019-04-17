@@ -7,8 +7,8 @@
 
 import os
 import pandas as pd
-import basf2 as b2
 
+import basf2 as b2
 # make the Belle2 namespace available
 from ROOT import Belle2
 from smartBKG.preprocessing import MCParticlesPreprocManager
@@ -154,3 +154,8 @@ class NNApplyModule(b2.Module):
 
         # Module returns bool of whether prediciton passes threshold for use in basf2 path flow control
         self.return_value(int(pred[0][0] >= self.threshold))
+
+    def terminate(self):
+        del self.model
+        del self.e_e_info
+        del self.cap

@@ -4,7 +4,7 @@
 # Plot binomial distribution of threshold for Ntuple variables
 # James Kahn 2019
 
-from scipy.stats import binom
+from scipy.stats import binom, binom_test
 import pandas as pd
 import os
 import numpy as np
@@ -50,7 +50,7 @@ class PlotBinomial():
         for var in self.vars_df['variable']:
             # First create df with counts of each bin: A (no cut), B (cut)
             cut_df, pre_evts, post_evts = self._create_var_counts(self.df, var, threshold)
-            efficiency = post_evts / pre_evts
+            efficiency = float(post_evts) / pre_evts
             # Next add binomial mean, stddev, p-value for A
             cut_df = self._append_binom_stats(cut_df, efficiency)
 
@@ -77,8 +77,10 @@ class PlotBinomial():
         # Purely using scipy binom class?
         df['binom_mean'] = binom.mean(df['nocut'], eff)
         df['binom_stddev'] = binom.std(df['nocut'], eff)
+        print(df['binom_stddev'])
         df['cut_binom_pval'] = df.apply(
-            lambda x: binom.cdf(x['cut'], x['nocut'], eff),
+            lambda x: binom_test(x['cut'], x['nocut'], eff),
+            # lambda x: binom.cdf(x['cut'], x['nocut'], eff),
             axis=1,
         )
 

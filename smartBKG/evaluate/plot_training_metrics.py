@@ -42,19 +42,20 @@ class CompareTrainingMetrics():
     def plot_all_metrics(self, out_dir, trunc=False):
         ''' Plot all available metrics in single plot and separately
 
-        trunc indicates removal of time stamp from legend (useful if plotting single training)
+        trunc indicates removal of model name stamp from legend (useful if plotting single training)
         '''
         # First plot all metrics together
         self.plot_metrics(
             self.metrics_df.columns,
-            os.path.join(out_dir, 'all_metrics.pdf'),
+            os.path.join(out_dir, 'all_metrics'),
             trunc=trunc
         )
 
         for col in self.metrics_df.columns:
             self.plot_metrics(
                 col,
-                os.path.join(out_dir, '{}.pdf'.format(col)),
+                # os.path.join(out_dir, '{}.pdf'.format(col)),
+                os.path.join(out_dir, col),
                 trunc=trunc
             )
 
@@ -65,12 +66,28 @@ class CompareTrainingMetrics():
             metrics (str, list): The metrics in the dataframe to plot
             out_file (str): Path to file for saving plot
         '''
+        plt.figure(
+            figsize=(4, 3),
+        )
+        # For some reason not respecting figsize in figure() call
+        plt.rcParams["figure.figsize"] = (5, 3.5)
+        # fig_size = plt.rcParams["figure.figsize"]
+        # print(fig_size)
         metrics_df = self.metrics_df
-        if trunc:
-            metrics_df.index = metrics_df.index.map(mapper=(lambda x: (re.sub(r'_20.*', '', x[0]), *(x[1:]))))
 
-        plt.figure()
-        self.metrics_df.unstack(level=0)[metrics].plot(
+        # To remove timestamp only
+        # if trunc:
+        #     metrics_df.index = metrics_df.index.map(mapper=(lambda x: (re.sub(r'_20.*', '', x[0]), *(x[1:]))))
+
+        metrics_df = metrics_df.unstack(level=0)
+
+        # Remove entire model name
+        if trunc:
+            metrics_df.columns = metrics_df.columns.droplevel(1)
+
+        # fig.set_figheight(3)
+        # fig.set_figwidth(4)
+        metrics_df[metrics].plot(
             # ylim=(0.3, 1.),  # Option to add later for wildly varying val_acc
         )
 
@@ -90,7 +107,7 @@ class CompareTrainingMetrics():
         # plt.axes().yaxis.set_minor_locator(ml)
         # plt.ylim(0., 1.0)
         plt.savefig(
-            out_file,
+            out_file + '.pdf',
             bbox_inches='tight',
             transparent=True,
         )
@@ -109,7 +126,8 @@ def GetCmdArgs():
                         help="Output directory for plot files", metavar="OUTPUT",
                         dest='out_dir')
     parser.add_argument('--trunc', action='store_true',
-                        help='Truncate model names to remove timestamp, useful if plotting single training metrics',
+                        help='Remove model name/timestamp, useful if plotting single training metrics',
+                        # help='Truncate model names to remove timestamp, useful if plotting single training metrics',
                         dest='trunc')
     return parser.parse_args()
 

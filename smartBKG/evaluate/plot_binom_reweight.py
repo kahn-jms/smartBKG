@@ -23,13 +23,14 @@ class PlotBinomReweight(PlotBinomial):
 
     def plot_threshold(self, threshold, out_dir):
         ''' Plot cut '''
-        self._reweight_biasNN(self.df, threshold)
+        bin_weights = self._collect_bin_weights(self.df, threshold)
         for var in self.vars_df['variable']:
             # First create df with counts of each bin: A (no cut), B (cut)
             cut_df, pre_evts, post_evts = self._create_var_counts(
                 self.df,
                 var,
                 threshold,
+                bin_weights,
             )
             efficiency = post_evts / pre_evts
             # Collect bin weights for that var
@@ -62,7 +63,7 @@ class PlotBinomReweight(PlotBinomial):
                 post=post_evts,
             )
 
-    def _reweight_biasNN(
+    def _collect_bin_weights(
         self,
         df,
         threshold,
@@ -93,8 +94,45 @@ class PlotBinomReweight(PlotBinomial):
         # pass_cut = pass_cut / pass_cut.sum()
         # fail_cut = fail_cut / fail_cut.sum()
 
-        bin_weights = fail_cut / pass_cut
+        # Calculate weight factor
+        # bin_weights = fail_cut / pass_cut
+        bin_weights = (fail_cut + pass_cut) / pass_cut
+        # Rescale to be between 0 and 1
+        bin_weights = (bin_weights - bin_weights.min()) / (bin_weights.max() - bin_weights.min())
+        print('Mean:', bin_weights.mean())
         print(bin_weights)
+        return bin_weights
+
+    def _create_var_counts(self, df, var, threshold, bin_weights):
+        ''' Create df with bin counts before and after threshold cut '''
+        # Create bin counts with and without cut
+        no_cut = df['{}_bins'.format(var)].value_counts()
+        with_cut = df.query(
+            '{} > {}'.format(self.threshold_var, threshold)
+        )
+        # Reweight first
+        with_cut = self._reweight_biasNN(with_cut, bin_weights)
+        with_cut = with_cut['{}_bins'.format(var)].value_counts()
+
+        # Rename before merging
+        no_cut = no_cut.rename('nocut')
+        with_cut = with_cut.rename('cut')
+
+        return (
+            pd.concat([no_cut, with_cut], axis=1).fillna(0).sort_index(),
+            no_cut.sum(),
+            with_cut.sum(),
+        )
+
+    def _reweight_biasNN(self, df, bin_weights, biasNN_var='biasNN_pred'):
+        bin_var = '{}_bins'.format(biasNN_var)
+        weighted_list = []
+        for b in bin_weights.index:
+            weighted_list.append(
+                df[df[bin_var] == b].sample(frac=bin_weights.loc[b])
+            )
+
+        return pd.concat(weighted_list)
         # for b in df[bin_var].unique():
         #     pred_pass_count = df[
         #         (df[bin_var] == b) &
@@ -113,4 +151,3 @@ class PlotBinomReweight(PlotBinomial):
         #     orient='index',
         #     columns=['weights']
         # )
-        return bin_weights
