@@ -36,7 +36,7 @@ This relies on each event within an MC batch having unique event numbers (in off
 The arrays can then be merged for a single MC channel and used for event selection on the parent MDST files.
 
 Everything's a lie, just need to use keepParents flag.
-~~~At the moment can't seem to access parent event number during processing (overwritten on import?), but when I can:~~~
+~~At the moment can't seem to access parent event number during processing (overwritten on import?), but when I can:~~
 ~~To do this we save a Pandas series with the index being the LFN of the original MDST file (parentLFN in the skim file) and the value is a list of event numbers.~~
 
 ## Preprocessing
